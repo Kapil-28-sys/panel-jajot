@@ -11,6 +11,13 @@ const themeApiDev = () => ({
       const { default: handler } = await server.ssrLoadModule("/api/settings/theme.js");
       await handler(req, res);
     });
+<<<<<<< HEAD
+=======
+    server.middlewares.use("/api/theme-css", async (req, res) => {
+      const { default: handler } = await server.ssrLoadModule("/api/theme-css.js");
+      await handler(req, res);
+    });
+>>>>>>> b77933a (scss used in this)
   },
 });
 

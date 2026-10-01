@@ -35,3 +35,29 @@ export async function fetchThemeSettings() {
 export async function saveThemeSettings(theme) {
   await http.put(THEME_PATH, { theme }, { headers: authHeaders() });
 }
+<<<<<<< HEAD
+=======
+
+/* ---- Vendor panel theme: overrides saved per vendor, layered on the Super Admin theme ---- */
+const vendorParams = (vendorId) => ({ vendor: vendorId });
+
+export async function fetchVendorTheme(vendorId) {
+  const res = await http.get(THEME_PATH, { headers: { ...authHeaders(), "Cache-Control": "no-cache" }, params: { ...vendorParams(vendorId), t: Date.now() } });
+  const body = res.data;
+  if (!body || typeof body !== "object") return null; // no theme API on this host
+  return { override: body.theme && typeof body.theme === "object" ? body.theme : null, revision: body.revision || 0 };
+}
+
+/** override = object (save), null (back to the Super Admin look). restore="previous" goes back one version. */
+export async function saveVendorTheme(vendorId, override, restore) {
+  const payload = restore ? { restore } : { theme: override };
+  const res = await http.put(THEME_PATH, payload, { headers: authHeaders(), params: vendorParams(vendorId) });
+  return res.data;
+}
+
+/** Super Admin: go back to the previous saved version. Resolves the restored theme. */
+export async function restoreAdminTheme() {
+  const res = await http.put(THEME_PATH, { restore: "previous" }, { headers: authHeaders() });
+  return res.data?.theme || null;
+}
+>>>>>>> b77933a (scss used in this)

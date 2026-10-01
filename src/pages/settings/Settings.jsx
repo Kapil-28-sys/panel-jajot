@@ -4,6 +4,11 @@ import {
   ShieldCheck, SlidersHorizontal, Store, Upload, UserCog, AlertCircle,
 } from "lucide-react";
 import ThemeSettings from "./ThemeSettings";
+<<<<<<< HEAD
+=======
+import PreviousVersionButton from "../../theme/PreviousVersionButton";
+import { useTheme } from "../../theme/ThemeProvider";
+>>>>>>> b77933a (scss used in this)
 
 /**
  * Settings.jsx
@@ -351,6 +356,10 @@ export default function Settings() {
   }, [notice]);
 
   const notify = (message, type = "success") => setNotice({ message, type });
+<<<<<<< HEAD
+=======
+  const { revision } = useTheme();
+>>>>>>> b77933a (scss used in this)
 
   const save = () => {
     try {
@@ -400,7 +409,18 @@ export default function Settings() {
         </div>
       </section>
 
+<<<<<<< HEAD
       {tab === "appearance" && <ThemeSettings notify={notify} />}
+=======
+      {tab === "appearance" && (
+        <>
+          <div className="mb-4 flex justify-end">
+            <PreviousVersionButton notify={notify} />
+          </div>
+          <ThemeSettings key={revision} notify={notify} />
+        </>
+      )}
+>>>>>>> b77933a (scss used in this)
       {tab === "general" && <General value={draft.general} onChange={part("general")} />}
       {tab === "roles" && <Roles matrix={draft.matrix} onChange={part("matrix")} />}
       {tab === "rules" && <Rules value={draft.rules} onChange={part("rules")} />}
