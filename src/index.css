@@ -1,0 +1,227 @@
+@import "tailwindcss";
+
+@theme {
+  /* Brand */
+  /* Theme-driven (Settings > Appearance sets --ink). */
+  --color-ink-950: rgb(var(--ink));
+  --color-ink-900: rgb(var(--ink));
+  --color-ink-800: color-mix(in srgb, rgb(var(--ink)) 94%, white);
+  --color-ink-700: color-mix(in srgb, rgb(var(--ink)) 80%, white);
+  --color-ink-600: color-mix(in srgb, rgb(var(--ink)) 66%, white);
+
+  /* Accent shades follow the theme. amber-50..300 and 700+ are left as real
+     Tailwind ambers so warning / pending pills stay amber. */
+  --color-amber-400: rgb(var(--brand-line));
+  --color-amber-500: rgb(var(--brand));
+  --color-amber-600: rgb(var(--brand-dark));
+
+  /* Neutrals */
+  --color-surface: rgb(var(--page-bg));
+  --color-surface-raised: rgb(var(--card-bg));
+  --color-line: rgb(var(--border));
+
+  /* Semantic (Settings > Colors > Status) */
+  --color-success: rgb(var(--success));
+  --color-warning: rgb(var(--warning));
+  --color-danger: rgb(var(--danger));
+  --color-info: #3b82f6;
+
+  --shadow-card: 0 1px 2px rgba(15, 23, 32, 0.04), 0 10px 24px -14px rgba(15, 23, 32, 0.18);
+  --shadow-card-hover: 0 2px 4px rgba(15, 23, 32, 0.06), 0 16px 32px -14px rgba(15, 23, 32, 0.22);
+  --shadow-pop: 0 12px 32px -8px rgba(15, 23, 32, 0.28);
+
+  --radius-card: 0.875rem;
+  --radius-control: 0.625rem;
+}
+
+:root {
+  /* Default theme values so the first paint is correct before ThemeProvider runs.
+     ThemeProvider (src/theme) overwrites these at runtime from Settings > Appearance. */
+  --brand: 192 146 63;
+  --brand-dark: 140 102 38;
+  --brand-line: 201 164 92;
+  --brand-text: 168 128 47;
+  --ink: 19 25 33;
+  --page-bg: 248 246 241;
+  --brand-hover: 197 155 78;
+  --brand-dark-hover: 149 114 55;
+  --brand-light: 208 173 111;
+  --brand-light-hover: 212 181 124;
+  --brand-lighter: 231 214 182;
+  --brand-lighter-hover: 236 222 197;
+  --brand-on-dark: 223 200 157;
+  --tint-50: 252 250 246;
+  --tint-100: 250 246 240;
+  --tint-200: 243 234 219;
+  --tint-300: 234 218 190;
+  --hero-a: 251 248 243;
+  --hero-b: 246 240 228;
+  --hero-c: 239 231 238;
+  --p4-b1: 94 72 31;
+  --p4-b2: 48 37 16;
+  --card-bg: 255 255 255;
+  --border: 231 232 234;
+  --stripe: 250 250 250;
+  --header-bg: 255 255 255;
+  --header-text: 19 25 33;
+  --sidebar-bg: 19 25 33;
+  --sidebar-text: 226 232 240;
+  --secondary: 19 25 33;
+  --secondary-text: 255 255 255;
+  --btn-bg: 192 146 63;
+  --btn-bg-hover: 197 155 78;
+  --btn-text: 19 25 33;
+  --success: 16 185 129;
+  --success-text: 6 115 80;
+  --warning: 245 158 11;
+  --warning-text: 152 98 7;
+  --danger: 239 68 68;
+  --danger-text: 148 42 42;
+  --font-display: 'Cormorant Garamond', 'Playfair Display', Georgia, 'Times New Roman', serif;
+  --font-body: ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji';
+  --font-size-base: 16px;
+  --heading-weight: 700;
+  --body-weight: 400;
+  --sidebar-w: 288px;
+  --sidebar-w-collapsed: 76px;
+  --header-h: 64px;
+  --container-w: 100%;
+  --radius-btn: 8px;
+  --shadow-card: 0 1px 2px rgba(15, 23, 32, 0.04), 0 10px 24px -14px rgba(15, 23, 32, 0.18);
+  --shadow-card-hover: 0 2px 4px rgba(15, 23, 32, 0.06), 0 16px 32px -14px rgba(15, 23, 32, 0.22);
+  --radius-card: 16px;
+  --radius-control: 8px;
+  --a1: 58 117 99;
+  --a1-dark: 35 70 59;
+  --a1-f1: 243 247 246;
+  --a1-f2: 230 238 236;
+  --a1-f3: 212 225 221;
+  --a1-b1: 31 63 53;
+  --a1-b2: 17 35 30;
+  --a1-text: 44 89 75;
+  --a2: 74 117 163;
+  --a2-dark: 44 70 98;
+  --a2-f1: 244 247 249;
+  --a2-f2: 232 238 244;
+  --a2-f3: 215 225 235;
+  --a2-b1: 40 63 88;
+  --a2-b2: 22 35 49;
+  --a2-text: 56 89 124;
+  --a3: 148 98 143;
+  --a3-dark: 89 59 86;
+  --a3-f1: 249 246 248;
+  --a3-f2: 242 235 241;
+  --a3-f3: 231 220 230;
+  --a3-b1: 80 53 77;
+  --a3-b2: 44 29 43;
+  --a3-text: 112 74 109;
+}
+
+html {
+  font-size: var(--font-size-base);
+}
+
+h1, h2 {
+  font-family: var(--font-display);
+}
+
+h1, h2, h3 {
+  font-weight: var(--heading-weight);
+}
+
+body {
+  background: var(--color-surface);
+  color: rgb(var(--ink));
+  font-family: var(--font-body);
+  font-weight: var(--body-weight);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Smooth, consistent interaction feedback across every button / link /
+   input in the app instead of relying on each page remembering to add
+   `transition-colors` itself. */
+button, a, input, select, textarea {
+  transition: background-color 150ms ease, border-color 150ms ease,
+    color 150ms ease, box-shadow 150ms ease, opacity 150ms ease,
+    transform 100ms ease;
+}
+
+button:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+/* Visible, consistent keyboard focus ring app-wide. */
+:focus-visible {
+  outline: 2px solid var(--color-amber-500);
+  outline-offset: 2px;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.96) translateY(4px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in { animation: fade-in 180ms ease-out; }
+.animate-scale-in { animation: scale-in 180ms cubic-bezier(0.16, 1, 0.3, 1); }
+.animate-slide-up { animation: slide-up 220ms cubic-bezier(0.16, 1, 0.3, 1); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  background-color: rgb(var(--page-bg));
+  color: rgb(var(--ink));
+}
+
+::selection {
+  background-color: rgb(var(--brand) / 0.35);
+  color: inherit;
+}
+
+/* Slim, unobtrusive scrollbars used across sidebars, tables, and modals */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.18);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(0, 0, 0, 0.3);
+}
+
+button,
+a {
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.1s ease;
+}

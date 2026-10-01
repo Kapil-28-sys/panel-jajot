@@ -1,0 +1,239 @@
+  return (
+    <div className="space-y-5">
+      <div className="rounded-card border border-line bg-surface-raised p-5 shadow-card sm:p-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-sm font-medium text-amber-600">Customer feedback</p>
+            <h1 className="mt-1 text-[1.65rem] font-bold tracking-tight text-ink-950">Reviews &amp; ratings</h1>
+            <p className="mt-1 text-sm text-slate-500">See what customers are saying about your products and manage their reviews.</p>
+          </div>
+          <Button type="button" variant="outline" icon={RefreshCw} loading={loading && Boolean(vendorId)}
+            onClick={load} disabled={!vendorId} className="self-start sm:self-auto">
+            Refresh
+          </Button>
+        </div>
+      </div>
+
+      {!vendorId && resolvingVendorId ? (
+        <div className="flex items-center justify-center gap-3 rounded-card border border-line bg-white px-6 py-16 text-sm text-slate-500 shadow-card">
+          <RefreshCw size={18} className="animate-spin text-amber-500" />
+          Loading your account…
+        </div>
+      ) : !vendorId ? (
+        <div className="rounded-card border border-line bg-white shadow-card">
+          <ErrorState message="We couldn't find your vendor account. Sign in again and try." />
+        </div>
+      ) : (
+        <>
+          <section className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(300px,0.8fr)]" aria-label="Review overview">
+            <div className="grid grid-cols-2 gap-3 sm:gap-4">
+              <MetricCard label="Total reviews" value={loading ? "—" : stats.total}
+                helper="Across your products" icon={MessageSquareText} tone="blue" />
+              <MetricCard label="Average rating" value={loading ? "—" : `${stats.average.toFixed(1)} / 5`}
+                helper="All customer ratings" icon={Star} tone="orange" />
+              <MetricCard label="Needs attention" value={loading ? "—" : stats.critical}
+                helper="1 and 2 star reviews" icon={TriangleAlert} tone="red" />
+              <MetricCard label="With photos" value={loading ? "—" : stats.withPhotos}
+                helper="Reviews with images" icon={Camera} tone="purple" />
+            </div>
+            <div className="rounded-card border border-line bg-surface-raised p-5 shadow-card sm:p-6">
+              <div className="mb-4 flex items-start justify-between gap-3">
+                <div>
+                  <h2 className="text-sm font-bold text-ink-950">Rating breakdown</h2>
+                  <p className="mt-1 text-xs text-slate-500">Select a rating to filter the reviews below.</p>
+                </div>
+                {activeStar && (
+                  <button type="button" onClick={() => { setActiveStar(null); setPage(1); }}
+                    className="shrink-0 text-xs font-semibold text-amber-700 hover:text-amber-600">
+                    Clear
+                  </button>
+                )}
+              </div>
+              <RatingBars counts={stats.counts} total={stats.total} activeStar={activeStar}
+                onSelect={(star) => { setActiveStar(star); setPage(1); }} />
+            </div>
+          </section>
+
+          <section className="overflow-hidden rounded-card border border-line bg-surface-raised shadow-card" aria-label="Customer reviews">
+            <div className="border-b border-line p-5 sm:p-6">
+              <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+                <div>
+                  <h2 className="text-base font-bold text-ink-950">Customer reviews</h2>
+                  <p className="mt-0.5 text-sm text-slate-500">
+                    {loading ? "Loading reviews…" : `${visible.length} matching review${visible.length === 1 ? "" : "s"}`}
+                  </p>
+                </div>
+                {(search || productFilter !== "all" || activeStar || sort !== "newest") && (
+                  <button type="button"
+                    onClick={() => { setSearch(""); setProductFilter("all"); setActiveStar(null); setSort("newest"); setPage(1); }}
+                    className="text-xs font-semibold text-amber-700 hover:text-amber-600">
+                    Reset filters
+                  </button>
+                )}
+              </div>
+              <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(180px,0.6fr)_minmax(180px,0.6fr)] md:items-end">
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium text-ink-800">Search reviews</label>
+                  <SearchInput value={search} onChange={(value) => { setSearch(value); setPage(1); }}
+                    placeholder="Reviewer, review text, or product…" className="w-full" />
+                </div>
+                <Select label="Product" value={productFilter}
+                  onChange={(e) => { setProductFilter(e.target.value); setPage(1); }}
+                  options={[{ value: "all", label: "All products" }, ...productOptions.map(({ id, label }) => ({ value: id, label }))]} />
+                <Select label="Sort by" value={sort} onChange={(e) => { setSort(e.target.value); setPage(1); }}
+                  options={[
+                    { value: "newest", label: "Newest first" },
+                    { value: "oldest", label: "Oldest first" },
+                    { value: "highest", label: "Highest rating" },
+                    { value: "lowest", label: "Lowest rating" },
+                  ]} />
+              </div>
+              {activeStar && (
+                <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                  Rating filter
+                  <button type="button" onClick={() => { setActiveStar(null); setPage(1); }}
+                    className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 font-semibold text-amber-700 hover:bg-amber-100">
+                    {activeStar} star ×
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {actionError && (
+              <div role="alert" className="mx-5 mt-5 rounded-control border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 sm:mx-6">
+                {actionError}
+              </div>
+            )}
+
+            {loading ? (
+              <div className="flex items-center justify-center gap-3 px-6 py-20 text-sm text-slate-500">
+                <RefreshCw size={18} className="animate-spin text-amber-500" />
+                Loading your reviews…
+              </div>
+            ) : error ? (
+              <ErrorState message={error} onRetry={load} />
+            ) : pageItems.length === 0 ? (
+              <EmptyState icon={MessageSquareText}
+                title={stats.total === 0 ? "No reviews yet" : "No matching reviews"}
+                description={stats.total === 0
+                  ? "Customer reviews for your products will appear here."
+                  : "Try a different search or clear the current filters."}
+                actionLabel={stats.total > 0 ? "Clear filters" : undefined}
+                onAction={stats.total > 0 ? () => {
+                  setSearch(""); setProductFilter("all"); setActiveStar(null); setSort("newest"); setPage(1);
+                } : undefined} />
+            ) : (
+              <ul className="divide-y divide-line">
+                {pageItems.map((review, index) => {
+                  const id = getId(review);
+                  const images = Array.isArray(review.image) ? review.image : review.image ? [review.image] : [];
+                  const date = formatDate(review.createdAt || review.updatedAt);
+                  return (
+                    <li key={id ?? index} className="p-5 sm:p-6">
+                      <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+                        <div className="flex min-w-0 flex-1 items-start gap-3">
+                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-ink-700 text-xs font-bold text-white">
+                            {initials(review.userName)}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-bold text-ink-950">{review.userName || "Anonymous"}</p>
+                            <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+                              <Stars value={review.rating} size={15} />
+                              <span className="text-xs font-semibold text-ink-700">{Number(review.rating || 0).toFixed(1)}</span>
+                              {date && <span className="text-xs text-slate-500">· {date}</span>}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex shrink-0 gap-2 sm:pl-0">
+                          <Button type="button" variant="outline" size="sm" icon={Pencil} onClick={() => openEdit(review)}>Edit</Button>
+                          <button type="button" onClick={() => { setActionError(null); setDeleteTarget(review); }}
+                            disabled={deletingId === id}
+                            className="inline-flex items-center gap-1.5 rounded-control border border-red-200 bg-white px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50">
+                            <Trash2 size={15} /> Delete
+                          </button>
+                        </div>
+                      </div>
+                      <p className="mt-4 whitespace-pre-wrap break-words text-sm leading-6 text-ink-800">
+                        {review.description || <span className="italic text-slate-400">No written review provided.</span>}
+                      </p>
+                      {images.length > 0 && (
+                        <div className="mt-4 flex flex-wrap gap-2">
+                          {images.map((img, imageIndex) => {
+                            const src = resolveImageUrl(img);
+                            return (
+                              <button key={`${img}-${imageIndex}`} type="button" onClick={() => setLightbox(src)}
+                                aria-label={`View review photo ${imageIndex + 1}`}
+                                className="h-16 w-16 overflow-hidden rounded-control border border-line bg-surface hover:border-amber-400 focus-visible:ring-2 focus-visible:ring-amber-500">
+                                <img src={src} alt="" className="h-full w-full object-cover"
+                                  onError={(e) => { e.currentTarget.style.display = "none"; }} />
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                      {(getPidLabel(review) || getVariantLabel(review)) && (
+                        <div className="mt-4 flex flex-wrap gap-x-5 gap-y-1 border-t border-line pt-3 text-xs text-slate-500">
+                          {getPidLabel(review) && <span className="min-w-0 break-all">Product: <span className="font-semibold text-ink-700">{getPidLabel(review)}</span></span>}
+                          {getVariantLabel(review) && <span className="min-w-0 break-all">Variant: <span className="font-semibold text-ink-700">{getVariantLabel(review)}</span></span>}
+                        </div>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+            {!loading && !error && visible.length > 0 && (
+              <DataPager total={visible.length} page={page} pageSize={PAGE_SIZE} onPageChange={setPage} />
+            )}
+          </section>
+        </>
+      )}
+
+      <Modal open={Boolean(editing && editForm)} onClose={() => { if (!saving) setEditing(null); }}
+        title="Edit review" description="Update the reviewer details, rating, or review content."
+        footer={
+          <>
+            <Button type="button" variant="outline" size="sm" disabled={saving} onClick={() => setEditing(null)}>Cancel</Button>
+            <Button type="submit" form="review-edit-form" size="sm" loading={saving}>Save changes</Button>
+          </>
+        }>
+        {editForm && (
+          <form id="review-edit-form" onSubmit={saveEdit} className="space-y-4">
+            <Input label="Reviewer name" value={editForm.userName}
+              onChange={(e) => setEditForm({ ...editForm, userName: e.target.value })} required />
+            <div>
+              <label htmlFor="review-rating" className="mb-1.5 block text-sm font-medium text-ink-800">Rating</label>
+              <div className="flex items-center gap-3 rounded-control border border-line bg-surface px-3 py-2">
+                <input id="review-rating" type="range" min="1" max="5" value={editForm.rating}
+                  onChange={(e) => setEditForm({ ...editForm, rating: e.target.value })}
+                  className="min-w-0 flex-1 accent-amber-500" />
+                <Stars value={Number(editForm.rating)} size={17} />
+                <span className="w-7 text-right text-sm font-semibold text-ink-950">{editForm.rating}</span>
+              </div>
+            </div>
+            <div>
+              <label htmlFor="review-description" className="mb-1.5 block text-sm font-medium text-ink-800">Review text</label>
+              <textarea id="review-description" rows={4} value={editForm.description}
+                onChange={(e) => setEditForm({ ...editForm, description: e.target.value })} required
+                className="w-full rounded-control border border-line bg-white px-3.5 py-2.5 text-sm text-ink-950 outline-none focus:border-amber-500 focus:ring-4 focus:ring-amber-500/10" />
+            </div>
+            <Input label="Image filenames" helperText="Separate multiple filenames with commas."
+              value={editForm.image} onChange={(e) => setEditForm({ ...editForm, image: e.target.value })}
+              placeholder="review1.jpg, review2.jpg" />
+            {editError && <p role="alert" className="rounded-control border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{editError}</p>}
+          </form>
+        )}
+      </Modal>
+
+      <ConfirmDialog open={Boolean(deleteTarget)} onClose={() => { if (!deletingId) setDeleteTarget(null); }}
+        onConfirm={confirmDelete} title="Delete review?"
+        description={`This will permanently remove ${deleteTarget?.userName || "this customer's"} review. This cannot be undone.`}
+        confirmLabel="Delete review" loading={Boolean(deletingId)} />
+
+      <Modal open={Boolean(lightbox)} onClose={() => setLightbox(null)} title="Review photo" size="xl">
+        {lightbox && <img src={lightbox} alt="Enlarged review attachment"
+          className="mx-auto max-h-[72vh] w-auto max-w-full rounded-control object-contain" />}
+      </Modal>
+    </div>
+  );
+}

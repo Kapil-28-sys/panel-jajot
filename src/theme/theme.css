@@ -1,0 +1,173 @@
+/**
+ * theme.css — everything that makes the runtime theme reach the WHOLE app without editing
+ * every page: table styles, dark-mode palette, and mapping of legacy hard-coded surfaces
+ * (bg-white, slate/stone greys, pastel tints) to theme variables.
+ *
+ * Variables are set by src/theme/themeConfig.js (applyTheme). Selectors use
+ * [data-theme] / [data-table] attributes so they also work inside the scoped live preview.
+ */
+
+/* ---- Surfaces: every "bg-white" follows Settings > Colors > Card / table surface ---- */
+.bg-white {
+  background-color: rgb(var(--card-bg));
+}
+.bg-white\/95,
+.bg-white\/90,
+.bg-white\/85,
+.bg-white\/80,
+.bg-white\/70 {
+  background-color: rgb(var(--card-bg) / 0.85);
+}
+
+/* ---- Card shadow (Settings > Theme): Tailwind inlines theme shadows at build time, so point the
+   utilities at the runtime variables instead ---- */
+.shadow-card {
+  --tw-shadow: var(--shadow-card);
+}
+.hover\:shadow-card-hover:hover {
+  --tw-shadow: var(--shadow-card-hover);
+}
+
+/* ---- Table styles (Settings > Theme > Table style) ---- */
+@layer components {
+  [data-table="striped"] tbody tr:nth-child(even) {
+    background-color: rgb(var(--stripe));
+  }
+  [data-table="bordered"] table {
+    border-collapse: collapse;
+  }
+  [data-table="bordered"] th,
+  [data-table="bordered"] td {
+    border: 1px solid rgb(var(--border));
+  }
+}
+
+/* ---- Native form controls that have no explicit colours ---- */
+@layer base {
+  [data-theme="dark"] input,
+  [data-theme="dark"] select,
+  [data-theme="dark"] textarea {
+    background-color: rgb(var(--card-bg));
+    color: rgb(var(--ink));
+  }
+  [data-theme="dark"] input::placeholder,
+  [data-theme="dark"] textarea::placeholder {
+    color: rgb(var(--ink) / 0.45);
+  }
+}
+
+/* ---- Dark palette: re-point Tailwind's legacy colour tokens ---- */
+[data-theme="dark"] {
+  /* greys used as surfaces / borders (50-300) and text (400-900) */
+  --color-slate-50: color-mix(in srgb, rgb(var(--card-bg)) 93%, white);
+  --color-slate-100: color-mix(in srgb, rgb(var(--card-bg)) 88%, white);
+  --color-slate-200: color-mix(in srgb, rgb(var(--card-bg)) 80%, white);
+  --color-slate-300: color-mix(in srgb, rgb(var(--card-bg)) 68%, white);
+  --color-slate-400: #8d97a5;
+  --color-slate-500: #a3adba;
+  --color-slate-600: #bcc4ce;
+  --color-slate-700: #cfd5dd;
+  --color-slate-800: #e1e5ea;
+  --color-slate-900: #f1f3f5;
+
+  --color-stone-50: var(--color-slate-50);
+  --color-stone-100: var(--color-slate-100);
+  --color-stone-200: var(--color-slate-200);
+  --color-stone-300: var(--color-slate-300);
+  --color-stone-400: var(--color-slate-400);
+  --color-stone-500: var(--color-slate-500);
+  --color-stone-600: var(--color-slate-600);
+  --color-stone-700: var(--color-slate-700);
+  --color-stone-800: var(--color-slate-800);
+  --color-stone-900: var(--color-slate-900);
+
+  --color-neutral-50: var(--color-slate-50);
+  --color-neutral-100: var(--color-slate-100);
+  --color-neutral-200: var(--color-slate-200);
+  --color-neutral-300: var(--color-slate-300);
+  --color-neutral-400: var(--color-slate-400);
+  --color-neutral-500: var(--color-slate-500);
+  --color-neutral-600: var(--color-slate-600);
+  --color-neutral-700: var(--color-slate-700);
+  --color-neutral-800: var(--color-slate-800);
+  --color-neutral-900: var(--color-slate-900);
+
+  --color-gray-50: var(--color-slate-50);
+  --color-gray-100: var(--color-slate-100);
+  --color-gray-200: var(--color-slate-200);
+  --color-gray-300: var(--color-slate-300);
+  --color-gray-400: var(--color-slate-400);
+  --color-gray-500: var(--color-slate-500);
+  --color-gray-600: var(--color-slate-600);
+  --color-gray-700: var(--color-slate-700);
+  --color-gray-800: var(--color-slate-800);
+  --color-gray-900: var(--color-slate-900);
+
+  /* pastel status tints: translucent backgrounds, lighter text */
+  --color-emerald-50: rgb(16 185 129 / 0.14);
+  --color-emerald-100: rgb(16 185 129 / 0.2);
+  --color-emerald-200: rgb(16 185 129 / 0.32);
+  --color-emerald-600: #34d399;
+  --color-emerald-700: #6ee7b7;
+  --color-emerald-800: #a7f3d0;
+
+  --color-green-50: rgb(34 197 94 / 0.14);
+  --color-green-100: rgb(34 197 94 / 0.2);
+  --color-green-600: #4ade80;
+  --color-green-700: #86efac;
+
+  --color-red-50: rgb(239 68 68 / 0.14);
+  --color-red-100: rgb(239 68 68 / 0.2);
+  --color-red-200: rgb(239 68 68 / 0.32);
+  --color-red-300: rgb(239 68 68 / 0.5);
+  --color-red-600: #f87171;
+  --color-red-700: #fca5a5;
+
+  --color-rose-50: rgb(244 63 94 / 0.14);
+  --color-rose-100: rgb(244 63 94 / 0.2);
+  --color-rose-200: rgb(244 63 94 / 0.32);
+  --color-rose-600: #fb7185;
+  --color-rose-700: #fda4af;
+  --color-rose-800: #fecdd3;
+
+  --color-sky-50: rgb(14 165 233 / 0.14);
+  --color-sky-100: rgb(14 165 233 / 0.2);
+  --color-sky-600: #38bdf8;
+  --color-sky-700: #7dd3fc;
+
+  --color-blue-50: rgb(59 130 246 / 0.14);
+  --color-blue-100: rgb(59 130 246 / 0.2);
+  --color-blue-600: #60a5fa;
+  --color-blue-700: #93c5fd;
+
+  --color-indigo-50: rgb(99 102 241 / 0.16);
+  --color-indigo-100: rgb(99 102 241 / 0.22);
+  --color-indigo-600: #818cf8;
+  --color-indigo-700: #a5b4fc;
+
+  --color-purple-50: rgb(168 85 247 / 0.16);
+  --color-purple-100: rgb(168 85 247 / 0.22);
+  --color-purple-600: #c084fc;
+  --color-purple-700: #d8b4fe;
+
+  --color-amber-50: rgb(245 158 11 / 0.14);
+  --color-amber-100: rgb(245 158 11 / 0.2);
+  --color-amber-200: rgb(245 158 11 / 0.32);
+  --color-amber-700: #fcd34d;
+  --color-amber-800: #fde68a;
+  --color-amber-900: #fef3c7;
+}
+
+/* amber-600 is the brand's dark end (a gradient colour); as TEXT it needs to be lighter */
+[data-theme="dark"] .text-amber-600,
+[data-theme="dark"] .hover\:text-amber-600:hover {
+  color: rgb(var(--brand-text));
+}
+
+/* ---- Scrollbars ---- */
+[data-theme="dark"] ::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.22);
+}
+[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.34);
+}

@@ -1,0 +1,105 @@
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { Bell, LogIn, LogOut, Menu, Moon, PanelLeft, PanelLeftClose, Search, ShieldCheck, Sun } from "lucide-react";
+import { clearSession, getCurrentSession } from "../../config/localAuth";
+import { useSidebar } from "../../context/SidebarContext";
+import { useTheme } from "../../theme/ThemeProvider";
+
+export default function Navbar() {
+  const navigate = useNavigate();
+  const [session, setSession] = useState(getCurrentSession);
+  const { setOpen: setSidebarOpen, collapsed, toggleCollapsed } = useSidebar();
+  const { theme, mode, toggleMode } = useTheme();
+
+  const logout = () => {
+    clearSession();
+    setSession({
+      loggedIn: false,
+      role: "Guest",
+      name: "Not signed in",
+    });
+    navigate("/login");
+  };
+
+  const iconButton =
+    "rounded-[var(--radius-control)] p-2 text-[rgb(var(--header-text)/0.65)] hover:bg-[rgb(var(--header-text)/0.08)] hover:text-[rgb(var(--header-text))]";
+
+  return (
+    <header className="sticky top-0 z-20 border-b border-line bg-[rgb(var(--header-bg)/0.92)] text-[rgb(var(--header-text))] backdrop-blur">
+      <div className="flex items-center gap-3 px-4 md:px-6" style={{ height: "var(--header-h)" }}>
+        <button
+          type="button"
+          onClick={() => setSidebarOpen(true)}
+          aria-label="Open menu"
+          className={`${iconButton} md:hidden`}
+        >
+          <Menu size={20} />
+        </button>
+
+        <button
+          type="button"
+          onClick={toggleCollapsed}
+          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          className={`${iconButton} hidden md:inline-flex`}
+        >
+          {collapsed ? <PanelLeft size={20} /> : <PanelLeftClose size={20} />}
+        </button>
+
+        <div className="relative min-w-0 flex-1 md:max-w-md">
+          <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <input
+            className="w-full rounded-control border border-line bg-[rgb(var(--page-bg))] py-2.5 pl-10 pr-3 text-sm text-ink-950 outline-none transition placeholder:text-slate-400 focus:border-amber-500 focus:ring-4 focus:ring-amber-500/10"
+            placeholder="Search products, orders, vendors…"
+          />
+        </div>
+
+        <div className="ml-auto flex items-center gap-2">
+          <div className="hidden items-center gap-2 rounded-full border border-line bg-[rgb(var(--page-bg))] px-3 py-1.5 text-xs font-semibold text-ink-800 lg:flex">
+            <ShieldCheck size={14} className="text-amber-500" />
+            {session.role}
+          </div>
+
+          {theme.mode.allowToggle && (
+            <button
+              type="button"
+              onClick={toggleMode}
+              aria-label={mode === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+              title={mode === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+              className={iconButton}
+            >
+              {mode === "dark" ? <Sun size={19} /> : <Moon size={19} />}
+            </button>
+          )}
+
+          <button
+            type="button"
+            aria-label="Notifications"
+            className={`relative p-2.5 ${iconButton.replace("p-2 ", "")}`}
+          >
+            <Bell size={19} />
+            <span className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-amber-500 ring-2 ring-[rgb(var(--header-bg))]" />
+          </button>
+
+          {session.loggedIn ? (
+            <button
+              onClick={logout}
+              className="hidden items-center gap-2 rounded-[var(--radius-btn)] border border-line px-3.5 py-2 text-sm font-medium text-[rgb(var(--header-text))] transition hover:bg-[rgb(var(--header-text)/0.08)] sm:inline-flex"
+            >
+              <LogOut size={15} />
+              Logout
+            </button>
+          ) : (
+            <button
+              onClick={() => navigate("/login")}
+              className="hidden items-center gap-2 rounded-[var(--radius-btn)] bg-[rgb(var(--btn-bg))] px-3.5 py-2 text-sm font-bold text-[rgb(var(--btn-text))] transition hover:bg-[rgb(var(--btn-bg-hover))] sm:inline-flex"
+            >
+              <LogIn size={15} />
+              Login
+            </button>
+          )}
+        </div>
+      </div>
+    </header>
+  );
+}
