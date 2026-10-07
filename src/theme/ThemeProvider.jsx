@@ -1,12 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useState } from "react";
 import { DEFAULT_THEME, applyTheme, normalizeTheme } from "./themeConfig";
-<<<<<<< HEAD
-import { fetchThemeSettings, saveThemeSettings } from "./themeApi";
-=======
 import { fetchThemeSettings, saveThemeSettings, fetchVendorTheme, saveVendorTheme, restoreAdminTheme } from "./themeApi";
 import { diffTheme, mergeTheme } from "./vendorTheme";
 import { getCurrentSession } from "../config/localAuth";
->>>>>>> b77933a (scss used in this)
 
 /**
  * ThemeProvider
@@ -22,8 +18,6 @@ const CACHE_KEY = "panel-theme-v2";
 const LEGACY_KEY = "admin-panel-theme";
 const MODE_KEY = "panel-color-mode";
 
-<<<<<<< HEAD
-=======
 // A vendor's own look is stored as "what they changed" on top of the Super Admin theme.
 const readVendorId = () => {
   const s = getCurrentSession();
@@ -48,7 +42,6 @@ const writeOverride = (id, o) => {
   }
 };
 
->>>>>>> b77933a (scss used in this)
 const readCache = () => {
   try {
     const raw = localStorage.getItem(CACHE_KEY) || localStorage.getItem(LEGACY_KEY);
@@ -63,6 +56,27 @@ const writeCache = (theme) => {
     localStorage.setItem(CACHE_KEY, JSON.stringify(theme));
   } catch {
     /* storage full/unavailable: theme still applies for this session */
+  }
+};
+
+// "Pending" = the last save only reached this device, not the server. While it is set, the device copy
+// wins over whatever the server returns, and the save is retried on the next load. This is what stops a
+// refresh from snapping back to the default look when the server could not store the change.
+const PENDING_KEY = "panel-theme-pending";
+const vendorPendingKey = (id) => `panel-theme-vendor-pending-${id}`;
+const getFlag = (k) => {
+  try {
+    return localStorage.getItem(k) === "1";
+  } catch {
+    return false;
+  }
+};
+const setFlag = (k, on) => {
+  try {
+    if (on) localStorage.setItem(k, "1");
+    else localStorage.removeItem(k);
+  } catch {
+    /* ignore */
   }
 };
 
@@ -82,9 +96,6 @@ const ThemeContext = createContext(null);
 
 export function ThemeProvider({ children }) {
   const [initial] = useState(readCache);
-<<<<<<< HEAD
-  const [theme, setThemeState] = useState(initial.theme);
-=======
   const [baseTheme, setThemeState] = useState(initial.theme); // Super Admin theme
   const [vendorId, setVendorId] = useState(readVendorId);
   const [override, setOverride] = useState(() => readOverride(readVendorId()));
@@ -93,7 +104,6 @@ export function ThemeProvider({ children }) {
     () => (vendorId && override ? normalizeTheme(mergeTheme(baseTheme, override)) : baseTheme),
     [baseTheme, vendorId, override]
   );
->>>>>>> b77933a (scss used in this)
   // "loading" | "server" | "device" | "default"
   const [source, setSource] = useState("loading");
   const [userMode, setUserModeState] = useState(readUserMode);
@@ -115,8 +125,6 @@ export function ThemeProvider({ children }) {
     return () => mq.removeEventListener("change", onChange);
   }, []);
 
-<<<<<<< HEAD
-=======
   // Sign-in / sign-out in this tab (or another one) changes whose look we show.
   useEffect(() => {
     const sync = () => {
@@ -137,8 +145,23 @@ export function ThemeProvider({ children }) {
     if (!vendorId) return undefined;
     let alive = true;
     fetchVendorTheme(vendorId)
-      .then((r) => {
+      .then(async (r) => {
         if (!alive || !r) return;
+        const local = readOverride(vendorId);
+        const pending = getFlag(vendorPendingKey(vendorId));
+        // The server has nothing saved (or an unsent change is waiting): keep this device's look, never wipe it,
+        // and try to upload it again.
+        if (pending || (r.revision === 0 && local)) {
+          setOverride(local);
+          try {
+            await saveVendorTheme(vendorId, local);
+            setFlag(vendorPendingKey(vendorId), false);
+            setSource("server");
+          } catch {
+            setSource("device");
+          }
+          return;
+        }
         setOverride(r.override);
         setRevision(r.revision);
         writeOverride(vendorId, r.override);
@@ -149,13 +172,25 @@ export function ThemeProvider({ children }) {
     };
   }, [vendorId]);
 
->>>>>>> b77933a (scss used in this)
   // Fetch the saved theme once. Any failure keeps the cached/default theme.
   useEffect(() => {
     let alive = true;
     fetchThemeSettings()
-      .then((remote) => {
+      .then(async (remote) => {
         if (!alive) return;
+        const isVendor = Boolean(readVendorId());
+        // An admin change that never reached the server must not be replaced by the older server copy.
+        if (!isVendor && initial.found && getFlag(PENDING_KEY)) {
+          setSource("device");
+          try {
+            await saveThemeSettings(initial.theme);
+            setFlag(PENDING_KEY, false);
+            if (alive) setSource("server");
+          } catch {
+            /* still offline / not allowed: keep showing the device copy */
+          }
+          return;
+        }
         if (remote) {
           const next = normalizeTheme(remote);
           setThemeState(next);
@@ -189,16 +224,16 @@ export function ThemeProvider({ children }) {
   const saveTheme = useCallback(
     async (next) => {
       const clean = normalizeTheme(next);
-<<<<<<< HEAD
-=======
       if (vendorId) {
         // Vendor: store only what differs from the Super Admin look.
         const ov = diffTheme(baseTheme, clean) || null;
         setOverride(ov);
         writeOverride(vendorId, ov);
         setUserMode(null);
+        setFlag(vendorPendingKey(vendorId), true);
         try {
           const r = await saveVendorTheme(vendorId, ov);
+          setFlag(vendorPendingKey(vendorId), false);
           setRevision(r?.revision || 0);
           setSource("server");
           return { remote: true };
@@ -207,12 +242,13 @@ export function ThemeProvider({ children }) {
           return { remote: false, error };
         }
       }
->>>>>>> b77933a (scss used in this)
       setThemeState(clean);
       writeCache(clean);
       setUserMode(null); // let the newly saved default mode take effect for the person saving
+      setFlag(PENDING_KEY, true);
       try {
         await saveThemeSettings(clean);
+        setFlag(PENDING_KEY, false);
         setSource("server");
         return { remote: true };
       } catch (error) {
@@ -220,16 +256,6 @@ export function ThemeProvider({ children }) {
         return { remote: false, error };
       }
     },
-<<<<<<< HEAD
-    [setUserMode]
-  );
-
-  const resetTheme = useCallback(() => saveTheme(DEFAULT_THEME), [saveTheme]);
-
-  const value = useMemo(
-    () => ({ theme, mode, source, saveTheme, resetTheme, toggleMode, setUserMode }),
-    [theme, mode, source, saveTheme, resetTheme, toggleMode, setUserMode]
-=======
     [setUserMode, vendorId, baseTheme]
   );
 
@@ -244,6 +270,7 @@ export function ThemeProvider({ children }) {
           const next = normalizeTheme(restored);
           setThemeState(next);
           writeCache(next);
+          setFlag(PENDING_KEY, false);
           setRevision((n) => n + 1);
         }
         return { remote: Boolean(restored) };
@@ -251,6 +278,7 @@ export function ThemeProvider({ children }) {
       const r = await saveVendorTheme(vendorId, null, "previous");
       setOverride(r.theme || null);
       writeOverride(vendorId, r.theme || null);
+      setFlag(vendorPendingKey(vendorId), false);
       setRevision(r.revision || 0);
       return { remote: true };
     } catch (error) {
@@ -261,7 +289,6 @@ export function ThemeProvider({ children }) {
   const value = useMemo(
     () => ({ theme, mode, source, saveTheme, resetTheme, toggleMode, setUserMode, isVendor: Boolean(vendorId), revision, restorePrevious }),
     [theme, mode, source, saveTheme, resetTheme, toggleMode, setUserMode, vendorId, revision, restorePrevious]
->>>>>>> b77933a (scss used in this)
   );
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;

@@ -4,13 +4,14 @@
 // Same schema, tabs, and field set as AddProduct.jsx (single-product mode) —
 // fetches the existing product with GET /products/:id, prefills every tab,
 // and saves with PUT /products/:id instead of POST /products/add.
+// UI restyled to the marketplace Dashboard design tokens. Logic unchanged.
 
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
-  ChevronRight, ChevronUp, ChevronDown, ArrowLeft, PackagePlus, Plus, Trash2,
+  ChevronUp, ChevronDown, ArrowLeft, Plus, Trash2,
   Tag, Layers, X, GripVertical, Image as ImageIcon, Check, Sparkles, Box,
-  FileText, Image, Palette, Shield, Search, Hash, AlertCircle, Package, Zap,
+  FileText, Image, Palette, Shield, Search, Hash, AlertCircle, Package, Zap, Gem,
 } from "lucide-react";
 
 const BASE_URL          = "https://amazon-multi-vendor-3.onrender.com/api";
@@ -71,23 +72,65 @@ const attrsArrayToObject = (attrs) => {
   return out;
 };
 
+/* ───────── design layer — same tokens as the marketplace Dashboard ───────── */
+const serif = { fontFamily: "var(--font-display)" };
+const GRAD = "bg-gradient-to-br from-[rgb(var(--brand))] to-[rgb(var(--brand-dark))]";
+const BRAND_TXT = "text-[rgb(var(--brand-text))]";
+const TINT = "bg-[rgb(var(--tint-100))]";
+const LINE = "border-[rgb(var(--brand-line))]";
+const FOCUS = "focus:border-[rgb(var(--brand))] focus:ring-2 focus:ring-[rgb(var(--brand)/0.18)]";
+const ACCENT = "accent-[rgb(var(--brand))]";
+const RCARD = "rounded-[var(--radius-card)]";
+const RCTL = "rounded-[var(--radius-control)]";
+const spinner = "inline-block h-4 w-4 animate-spin rounded-full border-2 border-stone-300 border-t-[rgb(var(--brand))]";
+
 const inp =
-  "mt-1 w-full rounded-card border border-slate-200 px-3.5 py-2.5 text-sm outline-none " +
-  "focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 bg-white transition-all " +
-  "placeholder:text-slate-400 shadow-sm hover:border-slate-300";
+  `mt-1 w-full ${RCTL} border border-stone-200 px-3.5 py-2.5 text-sm text-slate-900 outline-none ${FOCUS} ` +
+  "bg-white transition-all placeholder:text-slate-400 hover:border-stone-300";
 const selectInp =
-  "mt-1 w-full rounded-card border border-slate-200 px-3.5 py-2.5 text-sm outline-none " +
-  "focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 bg-white transition-all " +
-  "shadow-sm hover:border-slate-300 cursor-pointer";
+  `mt-1 w-full ${RCTL} border border-stone-200 px-3.5 py-2.5 text-sm text-slate-900 outline-none ${FOCUS} ` +
+  "bg-white transition-all hover:border-stone-300 cursor-pointer";
+const listInp =
+  `flex-1 ${RCTL} border border-stone-200 px-3.5 py-2.5 text-sm outline-none ${FOCUS} transition-all hover:border-stone-300`;
+const btnPrimary =
+  `inline-flex items-center justify-center gap-2 ${RCTL} ${GRAD} px-4 py-2.5 text-sm font-semibold text-white ` +
+  "transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40";
+const btnGhost =
+  `inline-flex items-center justify-center gap-2 ${RCTL} border border-stone-200 bg-white px-4 py-2.5 ` +
+  "text-sm font-semibold text-slate-700 transition-colors hover:bg-stone-50 disabled:opacity-50";
+const btnBrandOutline =
+  `${RCTL} border ${LINE} px-3.5 py-2 text-xs font-semibold ${BRAND_TXT} transition-colors hover:bg-[rgb(var(--tint-100))]`;
+const btnMini =
+  `${RCTL} border border-stone-200 px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-stone-50 disabled:cursor-not-allowed disabled:opacity-40 transition-colors`;
+const iconRemove =
+  `flex h-8 w-8 shrink-0 items-center justify-center ${RCTL} text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition-colors`;
+const labelCls = "block text-sm font-semibold text-slate-800";
+const miniLabel = "block text-xs font-semibold text-slate-700";
+const eyebrow = "text-xs font-medium text-slate-400";
+
+function GoldLine({ className = "inset-x-10" }) {
+  return (
+    <span className={`pointer-events-none absolute top-0 h-px bg-gradient-to-r from-transparent via-[rgb(var(--brand-line))] to-transparent ${className}`} />
+  );
+}
+
+function GlanceStat({ value, label }) {
+  return (
+    <div className="px-5 first:pl-0 last:pr-0">
+      <p className="text-2xl font-semibold leading-none text-slate-900" style={serif}>{value}</p>
+      <p className="mt-1 text-xs text-slate-500">{label}</p>
+    </div>
+  );
+}
 
 function SectionTitle({ icon: Icon, label }) {
   return (
-    <div className="flex items-center gap-2.5 mb-5">
-      <div className="flex h-7 w-7 items-center justify-center rounded-card bg-amber-50">
-        {Icon && <Icon size={14} className="text-amber-600" />}
+    <div className="mb-5 flex items-center gap-3">
+      <div className={`flex h-8 w-8 items-center justify-center ${RCTL} ${GRAD}`}>
+        {Icon && <Icon size={15} strokeWidth={1.6} className="text-white" />}
       </div>
-      <p className="text-xs font-bold uppercase tracking-widest text-slate-500">{label}</p>
-      <div className="flex-1 h-px bg-slate-100" />
+      <h3 className="text-xl font-semibold text-slate-900" style={serif}>{label}</h3>
+      <div className="h-px flex-1 bg-stone-200" />
     </div>
   );
 }
@@ -135,10 +178,10 @@ function regenerateVariants(existing, attributesMeta) {
 
 function AttrField({ attr, value, onChange }) {
   const change = (e) => onChange(attr._id, e.target.value);
-  const label = <>{attr.name}{attr.required && <span className="ml-1 text-red-500">*</span>}</>;
+  const label = <>{attr.name}{attr.required && <span className="ml-1 text-rose-600">*</span>}</>;
   if (attr.type === "dropdown") {
     return (
-      <label className="block text-sm font-medium text-ink-800">{label}
+      <label className="block text-sm font-medium text-slate-800">{label}
         <select value={value} onChange={change} className={selectInp}>
           <option value="">Select…</option>
           {attr.options.map((o) => <option key={o} value={o}>{o}</option>)}
@@ -147,7 +190,7 @@ function AttrField({ attr, value, onChange }) {
     );
   }
   return (
-    <label className="block text-sm font-medium text-ink-800">{label}
+    <label className="block text-sm font-medium text-slate-800">{label}
       <input type={attr.type === "number" ? "number" : "text"} value={value} onChange={change}
         placeholder={`Enter ${attr.name.toLowerCase()}`} className={inp} />
     </label>
@@ -162,19 +205,19 @@ function ValueTokenBox({ options, values, onChange, allowCreate }) {
   const remove = (v) => onChange(values.filter((x) => x !== v));
   return (
     <div>
-      <div className="mt-1 flex flex-wrap items-center gap-1.5 rounded-card border border-slate-200 bg-white px-2.5 py-2 min-h-[42px] focus-within:border-amber-500 focus-within:ring-2 focus-within:ring-amber-500/20 transition-all">
+      <div className={`mt-1 flex min-h-[42px] flex-wrap items-center gap-1.5 ${RCTL} border border-stone-200 bg-white px-2.5 py-2 transition-all focus-within:border-[rgb(var(--brand))] focus-within:ring-2 focus-within:ring-[rgb(var(--brand)/0.18)]`}>
         {values.map((v) => (
-          <span key={v} className="inline-flex items-center gap-1 rounded-control bg-slate-100 pl-2 pr-1 py-1 text-xs font-medium text-ink-800">
+          <span key={v} className={`inline-flex items-center gap-1 ${RCTL} bg-stone-100 py-1 pl-2 pr-1 text-xs font-medium text-slate-800`}>
             {v}
             <button type="button" onClick={() => remove(v)}
-              className="flex h-4 w-4 items-center justify-center rounded-control text-slate-400 hover:bg-red-100 hover:text-red-500 transition-colors">
+              className={`flex h-4 w-4 items-center justify-center ${RCTL} text-slate-400 transition-colors hover:bg-rose-100 hover:text-rose-600`}>
               <X size={10} />
             </button>
           </span>
         ))}
         {remaining.length > 0 && (
           <select value="" onChange={(e) => add(e.target.value)}
-            className="flex-1 min-w-[110px] border-0 text-xs text-slate-500 outline-none bg-transparent cursor-pointer">
+            className="min-w-[110px] flex-1 cursor-pointer border-0 bg-transparent text-xs text-slate-500 outline-none">
             <option value="">{values.length ? "Add another value…" : "Select value(s)…"}</option>
             {remaining.map((o) => <option key={o} value={o}>{o}</option>)}
           </select>
@@ -183,23 +226,17 @@ function ValueTokenBox({ options, values, onChange, allowCreate }) {
           <span className="text-xs text-slate-400">No options configured.</span>
         )}
       </div>
-      <div className="mt-2 flex items-center gap-2 flex-wrap">
-        <button type="button" onClick={() => onChange([...options])} disabled={!options.length || allSelected}
-          className="rounded-card border border-slate-200 px-2.5 py-1 text-xs font-semibold text-ink-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
-          Select all
-        </button>
-        <button type="button" onClick={() => onChange([])} disabled={!values.length}
-          className="rounded-card border border-slate-200 px-2.5 py-1 text-xs font-semibold text-ink-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
-          Select none
-        </button>
+      <div className="mt-2 flex flex-wrap items-center gap-2">
+        <button type="button" onClick={() => onChange([...options])} disabled={!options.length || allSelected} className={btnMini}>Select all</button>
+        <button type="button" onClick={() => onChange([])} disabled={!values.length} className={btnMini}>Select none</button>
         {allowCreate && (
-          <div className="flex items-center gap-1.5 ml-auto">
+          <div className="ml-auto flex items-center gap-1.5">
             <input value={pending} onChange={(e) => setPending(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); add(pending); setPending(""); } }}
               placeholder="New value…"
-              className="w-28 rounded-card border border-slate-200 px-2 py-1.5 text-xs outline-none focus:border-amber-500" />
+              className={`w-28 ${RCTL} border border-stone-200 px-2 py-1.5 text-xs outline-none focus:border-[rgb(var(--brand))]`} />
             <button type="button" onClick={() => { add(pending); setPending(""); }}
-              className="rounded-card border border-dashed border-amber-300 px-2.5 py-1 text-xs font-semibold text-amber-600 hover:bg-amber-50 transition-colors">
+              className={`${RCTL} border border-dashed ${LINE} px-2.5 py-1 text-xs font-semibold ${BRAND_TXT} transition-colors hover:bg-[rgb(var(--tint-100))]`}>
               Create value
             </button>
           </div>
@@ -213,46 +250,44 @@ function AttributePanel({ group, onUpdate, onRemove }) {
   const [open, setOpen] = useState(true);
   const isCategory = !!group.fromCategory;
   return (
-    <div className="rounded-card border border-slate-200 bg-white shadow-sm overflow-hidden">
-      <div className="flex items-center justify-between gap-3 px-4 py-3 bg-slate-50/70 border-b border-slate-100 cursor-pointer"
+    <div className={`overflow-hidden ${RCARD} border border-stone-200 bg-white`}>
+      <div className="flex cursor-pointer items-center justify-between gap-3 border-b border-stone-200 bg-stone-50/70 px-4 py-3"
         onClick={() => setOpen((o) => !o)}>
-        <div className="flex items-center gap-2.5 min-w-0">
-          <GripVertical size={14} className="text-slate-300 shrink-0" />
-          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-control bg-amber-100">
-            <Tag size={12} className="text-amber-600" />
+        <div className="flex min-w-0 items-center gap-2.5">
+          <GripVertical size={14} className="shrink-0 text-slate-300" />
+          <span className={`flex h-6 w-6 shrink-0 items-center justify-center ${RCTL} bg-[rgb(var(--tint-200))]`}>
+            <Tag size={12} className={BRAND_TXT} />
           </span>
-          <p className="text-sm font-bold text-ink-900 truncate">{group.name || "Untitled attribute"}</p>
+          <p className="truncate text-sm font-semibold text-slate-900">{group.name || "Untitled attribute"}</p>
           {isCategory && (
-            <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full shrink-0">
-              From category
-            </span>
+            <span className="shrink-0 rounded-full bg-stone-100 px-2 py-0.5 text-[11px] font-medium text-slate-500">From category</span>
           )}
           {group.values.length > 0 && (
-            <span className="text-xs font-semibold text-amber-600 shrink-0">
+            <span className={`shrink-0 text-xs font-semibold ${BRAND_TXT}`}>
               {group.values.length} value{group.values.length !== 1 ? "s" : ""}
             </span>
           )}
         </div>
-        <div className="flex items-center gap-3 shrink-0">
+        <div className="flex shrink-0 items-center gap-3">
           <button type="button" onClick={(e) => { e.stopPropagation(); onRemove(); }}
-            className="text-xs font-semibold text-red-500 hover:text-red-600 hover:underline">
+            className="text-xs font-semibold text-rose-600 hover:underline">
             Remove
           </button>
           {open ? <ChevronUp size={15} className="text-slate-400" /> : <ChevronDown size={15} className="text-slate-400" />}
         </div>
       </div>
       {open && (
-        <div className="px-4 py-4 space-y-4">
-          <label className="block text-xs font-bold uppercase tracking-wide text-slate-400">
+        <div className="space-y-4 px-4 py-4">
+          <label className={`block ${eyebrow}`}>
             Name
             {isCategory ? (
-              <p className="mt-1 text-sm font-semibold text-ink-900">{group.name}</p>
+              <p className="mt-1 text-sm font-semibold text-slate-900">{group.name}</p>
             ) : (
               <input value={group.name} onChange={(e) => onUpdate({ ...group, name: e.target.value })}
                 placeholder="e.g. Color" className={inp} />
             )}
           </label>
-          <label className="block text-xs font-bold uppercase tracking-wide text-slate-400">
+          <label className={`block ${eyebrow}`}>
             Value(s)
             <ValueTokenBox
               options={isCategory ? group.options : group.values}
@@ -262,16 +297,16 @@ function AttributePanel({ group, onUpdate, onRemove }) {
             />
           </label>
           <div className="flex flex-wrap gap-4 pt-1">
-            <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-ink-700">
+            <label className="flex cursor-pointer items-center gap-2 text-xs font-semibold text-slate-700">
               <input type="checkbox" checked={group.visible !== false}
                 onChange={(e) => onUpdate({ ...group, visible: e.target.checked })}
-                className="h-4 w-4 rounded-control border-slate-300 text-amber-600 focus:ring-amber-500" />
+                className={`h-4 w-4 rounded border-stone-300 ${ACCENT}`} />
               Visible on the product page
             </label>
-            <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-ink-700">
+            <label className="flex cursor-pointer items-center gap-2 text-xs font-semibold text-slate-700">
               <input type="checkbox" checked={group.forVariations !== false}
                 onChange={(e) => onUpdate({ ...group, forVariations: e.target.checked })}
-                className="h-4 w-4 rounded-control border-slate-300 text-amber-600 focus:ring-amber-500" />
+                className={`h-4 w-4 rounded border-stone-300 ${ACCENT}`} />
               Used for variations
             </label>
           </div>
@@ -309,35 +344,28 @@ function AttributesMetaBuilder({ attributesMeta, setAttributesMeta, attributes }
 
   return (
     <div className="space-y-4">
-      <div className="rounded-card border border-slate-200 bg-slate-50/60 p-4">
-        <p className="text-sm text-slate-500 mb-3">
+      <div className={`${RCARD} border border-stone-200 bg-stone-50/60 p-4`}>
+        <p className="mb-3 text-sm text-slate-500">
           Add descriptive pieces of information customers can use to find this product, like "Color" or "Size" —
           then pick which values apply, and which attributes should generate variations.
         </p>
         <div className="flex flex-wrap items-center gap-3">
-          <button type="button" onClick={addNew}
-            className="rounded-card border border-amber-300 px-3.5 py-2 text-xs font-bold text-amber-600 hover:bg-amber-50 transition-colors">
-            Add new
-          </button>
+          <button type="button" onClick={addNew} className={btnBrandOutline}>Add new</button>
           {availableAttrs.length > 0 && (
             <div className="flex items-center gap-2">
-              <select value={pendingAttrId} onChange={(e) => setPendingAttrId(e.target.value)}
-                className={`${selectInp} mt-0 w-52`}>
+              <select value={pendingAttrId} onChange={(e) => setPendingAttrId(e.target.value)} className={`${selectInp} mt-0 w-52`}>
                 <option value="">Add existing…</option>
                 {availableAttrs.map((a) => <option key={a._id} value={a._id}>{a.name}</option>)}
               </select>
-              <button type="button" onClick={addExisting} disabled={!pendingAttrId}
-                className="rounded-card bg-amber-600 px-3.5 py-2 text-xs font-bold text-white hover:bg-amber-700 disabled:opacity-40 transition-colors">
-                Add
-              </button>
+              <button type="button" onClick={addExisting} disabled={!pendingAttrId} className={`${btnPrimary} !px-3.5 !py-2 !text-xs`}>Add</button>
             </div>
           )}
         </div>
       </div>
 
       {attributesMeta.length === 0 && (
-        <div className="rounded-card border-2 border-dashed border-slate-200 bg-slate-50/50 px-4 py-10 text-center">
-          <div className="flex h-12 w-12 items-center justify-center rounded-card bg-slate-100 mx-auto mb-3">
+        <div className={`${RCARD} border-2 border-dashed border-stone-200 bg-stone-50/50 px-4 py-10 text-center`}>
+          <div className={`mx-auto mb-3 flex h-12 w-12 items-center justify-center ${RCTL} bg-stone-100`}>
             <Tag size={20} className="text-slate-400" />
           </div>
           <p className="text-sm font-semibold text-slate-500">No attributes added yet</p>
@@ -354,12 +382,9 @@ function AttributesMetaBuilder({ attributesMeta, setAttributesMeta, attributes }
 
       {attributesMeta.length > 0 && (
         <div className="flex items-center gap-3 pt-1">
-          <button type="button" onClick={saveAttributes}
-            className="rounded-card bg-amber-600 px-5 py-2.5 text-sm font-bold text-white shadow-md shadow-amber-500/30 hover:bg-amber-700 transition-all">
-            Save attributes
-          </button>
+          <button type="button" onClick={saveAttributes} className={btnPrimary}>Save attributes</button>
           {savedFlash && (
-            <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-600">
+            <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700">
               <Check size={13} strokeWidth={3} /> Attributes saved
             </span>
           )}
@@ -391,123 +416,122 @@ function VariantRow({ variant, index, attributesMeta, forceOpen, forceOpenTick, 
   const setAttrValue = (attrName, value) => {
     upd({ attributes: variant.attributes.map((a) => (a.name === attrName ? { ...a, value } : a)) });
   };
+  const chipField = `${RCTL} border border-stone-200 bg-white px-2 py-1 text-xs font-semibold ${BRAND_TXT} outline-none focus:border-[rgb(var(--brand))]`;
 
   return (
-    <div className={`rounded-card border ${missingPrice ? "border-amber-200" : "border-slate-200"} bg-white shadow-sm overflow-hidden`}>
-      <div className="flex flex-wrap items-center gap-3 px-4 py-3 hover:bg-amber-50/20 transition-colors">
-        <GripVertical size={14} className="text-slate-300 shrink-0" />
-        <span className="text-xs font-mono text-slate-400 shrink-0 w-10">#{index + 1}</span>
-        <div className="flex flex-wrap gap-2 flex-1 min-w-[160px]">
+    <div className={`${RCARD} border ${missingPrice ? "border-[rgb(var(--brand-line)/0.6)]" : "border-stone-200"} overflow-hidden bg-white`}>
+      <div className="flex flex-wrap items-center gap-3 px-4 py-3 transition-colors hover:bg-[rgb(var(--tint-100)/0.4)]">
+        <GripVertical size={14} className="shrink-0 text-slate-300" />
+        <span className="w-10 shrink-0 font-mono text-xs text-slate-400">#{index + 1}</span>
+        <div className="flex min-w-[160px] flex-1 flex-wrap gap-2">
           {variant.attributes.map((a) => {
             const opts = optionsFor(a.name);
             return (
               <label key={a.name} className="inline-flex items-center gap-1.5 text-xs">
-                <span className="text-slate-400 font-medium hidden sm:inline">{a.name}:</span>
+                <span className="hidden font-medium text-slate-400 sm:inline">{a.name}:</span>
                 {opts.length ? (
-                  <select value={a.value} onChange={(e) => setAttrValue(a.name, e.target.value)}
-                    className="rounded-control border border-slate-200 bg-white px-2 py-1 text-xs font-semibold text-amber-700 outline-none focus:border-amber-500 cursor-pointer">
+                  <select value={a.value} onChange={(e) => setAttrValue(a.name, e.target.value)} className={`${chipField} cursor-pointer`}>
                     {!opts.includes(a.value) && a.value && <option value={a.value}>{a.value}</option>}
                     {opts.map((o) => <option key={o} value={o}>{o}</option>)}
                   </select>
                 ) : (
-                  <input value={a.value} onChange={(e) => setAttrValue(a.name, e.target.value)}
-                    className="w-20 rounded-control border border-slate-200 bg-white px-2 py-1 text-xs font-semibold text-amber-700 outline-none focus:border-amber-500" />
+                  <input value={a.value} onChange={(e) => setAttrValue(a.name, e.target.value)} className={`w-20 ${chipField}`} />
                 )}
               </label>
             );
           })}
         </div>
         {missingPrice && (
-          <span className="hidden sm:inline text-[10px] font-semibold uppercase tracking-wide text-amber-600 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full shrink-0">
+          <span className={`hidden shrink-0 rounded-full border border-[rgb(var(--brand-line)/0.6)] ${TINT} px-2 py-0.5 text-[11px] font-semibold ${BRAND_TXT} sm:inline`}>
             No price
           </span>
         )}
-        <div className="flex items-center gap-3 shrink-0 ml-auto">
-          <button type="button" onClick={onRemove} className="text-xs font-semibold text-red-500 hover:underline">Remove</button>
-          <button type="button" onClick={() => setOpen((o) => !o)} className="text-xs font-semibold text-amber-600 hover:underline">
+        <div className="ml-auto flex shrink-0 items-center gap-3">
+          <button type="button" onClick={onRemove} className="text-xs font-semibold text-rose-600 hover:underline">Remove</button>
+          <button type="button" onClick={() => setOpen((o) => !o)} className={`text-xs font-semibold ${BRAND_TXT} hover:underline`}>
             {open ? "Close" : "Edit"}
           </button>
         </div>
       </div>
 
       {open && (
-        <div className="border-t border-slate-100 px-4 py-5 grid gap-6 md:grid-cols-[112px_1fr]">
+        <div className="grid gap-6 border-t border-stone-200 px-4 py-5 md:grid-cols-[112px_1fr]">
           <div className="flex flex-col items-center gap-2">
-            <div className="flex h-24 w-24 items-center justify-center rounded-card border-2 border-dashed border-slate-200 bg-slate-50 overflow-hidden">
+            <div className={`flex h-24 w-24 items-center justify-center overflow-hidden ${RCTL} border-2 border-dashed border-stone-200 bg-stone-50`}>
               {variant.images[0]
                 ? <img src={variant.images[0]} alt="" className="h-full w-full object-cover" onError={(e) => { e.target.style.display = "none"; }} />
                 : <ImageIcon size={22} className="text-slate-300" />}
             </div>
             <input value={variant.images[0] ?? ""} onChange={(e) => upd({ images: e.target.value ? [e.target.value] : [] })}
               placeholder="Image URL"
-              className="w-full rounded-card border border-slate-200 px-2 py-1.5 text-xs outline-none focus:border-amber-500" />
+              className={`w-full ${RCTL} border border-stone-200 px-2 py-1.5 text-xs outline-none focus:border-[rgb(var(--brand))]`} />
           </div>
           <div className="space-y-4">
             <div className="grid gap-4 md:grid-cols-2">
-              <label className="block text-xs font-semibold text-ink-700">SKU
+              <label className={miniLabel}>SKU
                 <input value={variant.sku} onChange={(e) => upd({ sku: e.target.value })} placeholder="SKU-001" className={inp} />
               </label>
-              <label className="block text-xs font-semibold text-ink-700">GTIN, UPC, EAN, or ISBN
+              <label className={miniLabel}>GTIN, UPC, EAN, or ISBN
                 <input value={variant.gtin ?? ""} onChange={(e) => upd({ gtin: e.target.value })} placeholder="Optional" className={inp} />
               </label>
             </div>
             <div className="flex flex-wrap gap-4">
-              <label className="flex items-center gap-2 text-xs font-semibold text-ink-700">
+              <label className="flex items-center gap-2 text-xs font-semibold text-slate-700">
                 <input type="checkbox" checked={variant.enabled !== false} onChange={(e) => upd({ enabled: e.target.checked })}
-                  className="h-4 w-4 rounded-control border-slate-300 text-amber-600" />
+                  className={`h-4 w-4 rounded border-stone-300 ${ACCENT}`} />
                 Enabled
               </label>
-              <label className="flex items-center gap-2 text-xs font-semibold text-ink-700">
+              <label className="flex items-center gap-2 text-xs font-semibold text-slate-700">
                 <input type="checkbox" checked={!!variant.manageStock} onChange={(e) => upd({ manageStock: e.target.checked })}
-                  className="h-4 w-4 rounded-control border-slate-300 text-amber-600" />
+                  className={`h-4 w-4 rounded border-stone-300 ${ACCENT}`} />
                 Manage stock?
               </label>
             </div>
             <div className="grid gap-4 md:grid-cols-2">
-              <label className="block text-xs font-semibold text-ink-700">Regular price (₹)
+              <label className={miniLabel}>Regular price (₹)
                 <input type="number" value={variant.offer.mrp} onChange={(e) => updNested("offer", { mrp: e.target.value })}
                   placeholder="Variation price (required)" className={inp} />
               </label>
-              <label className="block text-xs font-semibold text-ink-700">Sale price (₹)
+              <label className={miniLabel}>Sale price (₹)
                 <input type="number" value={variant.offer.salePrice} onChange={(e) => updNested("offer", { salePrice: e.target.value })}
                   placeholder="Optional" className={inp} />
               </label>
-              <label className="block text-xs font-semibold text-ink-700">Selling price (₹)
+              <label className={miniLabel}>Selling price (₹)
                 <input type="number" value={variant.offer.sellingPrice} onChange={(e) => updNested("offer", { sellingPrice: e.target.value })}
                   placeholder="0.00" className={inp} />
               </label>
-              <label className="block text-xs font-semibold text-ink-700">Max order qty
+              <label className={miniLabel}>Max order qty
                 <input type="number" min="1" value={variant.offer.maximumOrderQuantity}
                   onChange={(e) => updNested("offer", { maximumOrderQuantity: Number(e.target.value) })} className={inp} />
               </label>
             </div>
             {variant.manageStock ? (
-              <label className="block text-xs font-semibold text-ink-700">Quantity
+              <label className={miniLabel}>Quantity
                 <input type="number" value={variant.inventory.stock}
                   onChange={(e) => updNested("inventory", { stock: e.target.value, quantity: e.target.value })}
                   placeholder="0" className={inp} />
               </label>
             ) : (
-              <label className="block text-xs font-semibold text-ink-700">Stock status
+              <label className={miniLabel}>Stock status
                 <select value={variant.stockStatus} onChange={(e) => upd({ stockStatus: e.target.value })} className={selectInp}>
                   {STOCK_STATUSES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
                 </select>
               </label>
             )}
             <div className="grid gap-4 md:grid-cols-2">
-              <label className="block text-xs font-semibold text-ink-700">Weight (kg)
+              <label className={miniLabel}>Weight (kg)
                 <input type="number" value={variant.weight} onChange={(e) => upd({ weight: e.target.value })} className={inp} />
               </label>
               <div className="grid grid-cols-3 gap-2">
                 {["length", "width", "height"].map((k) => (
-                  <label key={k} className="block text-xs font-semibold text-ink-700 capitalize">{k}
+                  <label key={k} className={`${miniLabel} capitalize`}>{k}
                     <input type="number" value={variant.dimensions[k]}
                       onChange={(e) => updNested("dimensions", { [k]: e.target.value })} className={inp} />
                   </label>
                 ))}
               </div>
             </div>
-            <label className="block text-xs font-semibold text-ink-700">Description
+            <label className={miniLabel}>Description
               <textarea value={variant.description} onChange={(e) => upd({ description: e.target.value })}
                 rows={3} className={`${inp} resize-none`} />
             </label>
@@ -543,12 +567,12 @@ function VariantsPanel({ attributesMeta, variants, setVariants }) {
     if (bulkAction === "deleteAll") { setVariants([]); setBulkAction(""); setBulkValue(""); return; }
     setVariants((prev) => prev.map((v) => {
       switch (bulkAction) {
-        case "price":     return { ...v, offer: { ...v.offer, mrp: bulkValue, sellingPrice: bulkValue } };
-        case "sale":      return { ...v, offer: { ...v.offer, salePrice: bulkValue } };
-        case "stockIn":   return { ...v, manageStock: false, stockStatus: "instock" };
-        case "stockOut":  return { ...v, manageStock: false, stockStatus: "outofstock" };
-        case "enableAll": return { ...v, enabled: true };
-        case "disableAll":return { ...v, enabled: false };
+        case "price":      return { ...v, offer: { ...v.offer, mrp: bulkValue, sellingPrice: bulkValue } };
+        case "sale":       return { ...v, offer: { ...v.offer, salePrice: bulkValue } };
+        case "stockIn":    return { ...v, manageStock: false, stockStatus: "instock" };
+        case "stockOut":   return { ...v, manageStock: false, stockStatus: "outofstock" };
+        case "enableAll":  return { ...v, enabled: true };
+        case "disableAll": return { ...v, enabled: false };
         default: return v;
       }
     }));
@@ -561,14 +585,10 @@ function VariantsPanel({ attributesMeta, variants, setVariants }) {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-2.5">
-        <button type="button" onClick={regenerate}
-          className="rounded-card border border-amber-300 px-3.5 py-2 text-xs font-bold text-amber-600 hover:bg-amber-50 transition-colors">
+        <button type="button" onClick={regenerate} className={btnBrandOutline}>
           {variants.length ? "Regenerate variations" : "Generate variations"}
         </button>
-        <button type="button" onClick={addBlankManual}
-          className="rounded-card border border-slate-200 px-3.5 py-2 text-xs font-bold text-ink-700 hover:bg-slate-50 transition-colors">
-          Add manually
-        </button>
+        <button type="button" onClick={addBlankManual} className={`${btnMini} !px-3.5 !py-2`}>Add manually</button>
         <div className="flex items-center gap-2">
           <select value={bulkAction} onChange={(e) => setBulkAction(e.target.value)} className={`${selectInp} mt-0 w-44`}>
             <option value="">Bulk actions…</option>
@@ -582,35 +602,32 @@ function VariantsPanel({ attributesMeta, variants, setVariants }) {
           </select>
           {(bulkAction === "price" || bulkAction === "sale") && (
             <input value={bulkValue} onChange={(e) => setBulkValue(e.target.value)} placeholder="₹"
-              className="w-20 rounded-card border border-slate-200 px-2 py-2 text-xs outline-none focus:border-amber-500" />
+              className={`w-20 ${RCTL} border border-stone-200 px-2 py-2 text-xs outline-none focus:border-[rgb(var(--brand))]`} />
           )}
-          <button type="button" onClick={applyBulk} disabled={!bulkAction}
-            className="rounded-card bg-amber-600 px-3 py-2 text-xs font-bold text-white hover:bg-amber-700 disabled:opacity-40 transition-colors">
-            Apply
-          </button>
+          <button type="button" onClick={applyBulk} disabled={!bulkAction} className={`${btnPrimary} !px-3 !py-2 !text-xs`}>Apply</button>
         </div>
         <div className="ml-auto text-xs text-slate-500">
           {variants.length} variation{variants.length !== 1 ? "s" : ""}{" "}
           (
-          <button type="button" className="text-amber-600 hover:underline font-semibold"
+          <button type="button" className={`font-semibold ${BRAND_TXT} hover:underline`}
             onClick={() => { setExpandAll(true); setExpandTick((t) => t + 1); }}>Expand</button>
           {" / "}
-          <button type="button" className="text-amber-600 hover:underline font-semibold"
+          <button type="button" className={`font-semibold ${BRAND_TXT} hover:underline`}
             onClick={() => { setExpandAll(false); setExpandTick((t) => t + 1); }}>Close</button>
           )
         </div>
       </div>
 
       {missingPriceCount > 0 && (
-        <div className="flex items-center gap-2 rounded-card border border-amber-200 bg-amber-50 px-3.5 py-2.5 text-xs text-amber-700">
+        <div className={`flex items-center gap-2 ${RCTL} border border-[rgb(var(--brand-line)/0.6)] ${TINT} px-3.5 py-2.5 text-xs ${BRAND_TXT}`}>
           <AlertCircle size={13} className="shrink-0" />
           {missingPriceCount} variation{missingPriceCount !== 1 ? "s" : ""} do{missingPriceCount === 1 ? "es" : ""} not have a price.
         </div>
       )}
 
       {variants.length === 0 ? (
-        <div className="rounded-card border-2 border-dashed border-slate-200 bg-slate-50 px-4 py-10 text-center">
-          <p className="text-sm text-slate-400 font-medium">
+        <div className={`${RCARD} border-2 border-dashed border-stone-200 bg-stone-50 px-4 py-10 text-center`}>
+          <p className="text-sm font-medium text-slate-400">
             {hasVariableAttrs
               ? 'Click "Generate variations" to build every combination.'
               : 'Select values on at least one attribute marked "Used for variations" above, then generate.'}
@@ -634,59 +651,54 @@ function VariantsPanel({ attributesMeta, variants, setVariants }) {
 function TabBasicInfo({ form, setForm, categories, subCategories, subToSubCategories,
   catLoading, subCatLoading, attrLoading, selectedCat, selectedSub, selectedSubSub,
   attributes, attrValues, setAttrValues, handleCatChange, handleSubChange, handleSubSubChange }) {
+  const loadingRow = (
+    <div className="mt-1 flex items-center gap-2 p-2.5 text-sm text-slate-400"><span className={spinner} /> Loading…</div>
+  );
   return (
     <div className="space-y-8">
       <SectionTitle icon={Hash} label="Identifiers" />
       <div className="grid gap-5 md:grid-cols-2">
-        <label className="block text-sm font-semibold text-ink-800 md:col-span-2">
-          Product Name <span className="text-red-500">*</span>
+        <label className={`${labelCls} md:col-span-2`}>
+          Product Name <span className="text-rose-600">*</span>
           <input value={form.productName} onChange={(e) => setForm({ ...form, productName: e.target.value })} className={inp} />
         </label>
-        <label className="block text-sm font-semibold text-ink-800">Item Name
+        <label className={labelCls}>Item Name
           <input value={form.itemName} onChange={(e) => setForm({ ...form, itemName: e.target.value })} className={inp} />
         </label>
-        <label className="block text-sm font-semibold text-ink-800">Product Type
+        <label className={labelCls}>Product Type
           <input value={form.productType} onChange={(e) => setForm({ ...form, productType: e.target.value })} className={inp} />
         </label>
-        <label className="block text-sm font-semibold text-ink-800">Brand Name
+        <label className={labelCls}>Brand Name
           <input value={form.brandName} onChange={(e) => setForm({ ...form, brandName: e.target.value })} className={inp} />
         </label>
-        <label className="block text-sm font-semibold text-ink-800">Recommended Browse Node
+        <label className={labelCls}>Recommended Browse Node
           <input value={form.recommendedBrowseNode} onChange={(e) => setForm({ ...form, recommendedBrowseNode: e.target.value })} className={inp} />
         </label>
-        <label className="block text-sm font-semibold text-ink-800">External Product ID
+        <label className={labelCls}>External Product ID
           <input value={form.externalProductId} onChange={(e) => setForm({ ...form, externalProductId: e.target.value })} className={inp} />
         </label>
-        <label className="block text-sm font-semibold text-ink-800">Base Price (₹)
+        <label className={labelCls}>Base Price (₹)
           <input type="number" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} className={inp} />
         </label>
-        <label className="block text-sm font-semibold text-ink-800">Stock
+        <label className={labelCls}>Stock
           <input type="number" value={form.stock} onChange={(e) => setForm({ ...form, stock: e.target.value })} className={inp} />
         </label>
       </div>
 
       <SectionTitle icon={Layers} label="Category" />
       <div className="grid gap-5 md:grid-cols-2">
-        <label className="block text-sm font-semibold text-ink-800">
-          Category <span className="text-red-500">*</span>
-          {catLoading ? (
-            <div className="mt-1 flex items-center gap-2 text-sm text-slate-400 p-2.5">
-              <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-slate-300 border-t-amber-500" /> Loading…
-            </div>
-          ) : (
+        <label className={labelCls}>
+          Category <span className="text-rose-600">*</span>
+          {catLoading ? loadingRow : (
             <select value={selectedCat} onChange={(e) => handleCatChange(e.target.value)} className={selectInp}>
               <option value="">Select category…</option>
               {categories.map((c) => <option key={c._id} value={c._id}>{c.name}</option>)}
             </select>
           )}
         </label>
-        <label className="block text-sm font-semibold text-ink-800">
-          Sub-category <span className="text-red-500">*</span>
-          {subCatLoading ? (
-            <div className="mt-1 flex items-center gap-2 text-sm text-slate-400 p-2.5">
-              <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-slate-300 border-t-amber-500" /> Loading…
-            </div>
-          ) : (
+        <label className={labelCls}>
+          Sub-category <span className="text-rose-600">*</span>
+          {subCatLoading ? loadingRow : (
             <select value={selectedSub} onChange={(e) => handleSubChange(e.target.value)}
               disabled={!subCategories.length} className={`${selectInp} disabled:cursor-not-allowed disabled:opacity-50`}>
               <option value="">Select sub-category…</option>
@@ -694,7 +706,7 @@ function TabBasicInfo({ form, setForm, categories, subCategories, subToSubCatego
             </select>
           )}
         </label>
-        <label className="block text-sm font-semibold text-ink-800 md:col-span-2">
+        <label className={`${labelCls} md:col-span-2`}>
           Sub-to-sub category <span className="text-xs font-normal text-slate-400">(optional)</span>
           <select value={selectedSubSub} onChange={(e) => handleSubSubChange(e.target.value)}
             disabled={!subToSubCategories.length} className={`${selectInp} disabled:cursor-not-allowed disabled:opacity-50`}>
@@ -707,16 +719,16 @@ function TabBasicInfo({ form, setForm, categories, subCategories, subToSubCatego
       </div>
 
       {attrLoading && (
-        <div className="flex items-center gap-3 rounded-card border border-amber-100 bg-amber-50 px-4 py-3 text-sm text-amber-700">
-          <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-amber-300 border-t-amber-600 shrink-0" />
+        <div className={`flex items-center gap-3 ${RCTL} border border-[rgb(var(--brand-line)/0.4)] ${TINT} px-4 py-3 text-sm ${BRAND_TXT}`}>
+          <span className={`${spinner} shrink-0`} />
           Loading product attribute fields…
         </div>
       )}
       {!attrLoading && attributes.length > 0 && (
-        <div className="rounded-card border border-slate-100 bg-slate-50/80 p-5">
+        <div className={`${RCARD} border border-stone-200 bg-stone-50/80 p-5`}>
           <div className="mb-4 flex items-center justify-between">
-            <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Category Attributes — {attributes.length} fields</p>
-            <span className="text-xs text-white bg-amber-500 px-2 py-0.5 rounded-full font-medium">{attributes.filter((a) => a.required).length} required</span>
+            <p className={`text-sm font-semibold ${BRAND_TXT}`} style={serif}>Category attributes — {attributes.length} fields</p>
+            <span className={`rounded-full ${GRAD} px-2 py-0.5 text-xs font-medium text-white`}>{attributes.filter((a) => a.required).length} required</span>
           </div>
           <div className="grid gap-4 md:grid-cols-2">
             {attributes.map((attr) => (
@@ -730,51 +742,56 @@ function TabBasicInfo({ form, setForm, categories, subCategories, subToSubCatego
   );
 }
 
+function BulletEditor({ items, onAdd, onRemove, onUpdate, placeholder, addLabel, numbered }) {
+  return (
+    <div className="space-y-2.5">
+      {items.map((v, i) => (
+        <div key={i} className="flex items-center gap-3">
+          {numbered && (
+            <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[rgb(var(--tint-200))] text-xs font-semibold ${BRAND_TXT}`}>{i + 1}</span>
+          )}
+          <input value={v} onChange={(e) => onUpdate(i, e.target.value)} placeholder={`${placeholder} ${i + 1}`} className={listInp} />
+          {items.length > 1 && (
+            <button onClick={() => onRemove(i)} className={iconRemove}><X size={14} /></button>
+          )}
+        </div>
+      ))}
+      <button onClick={onAdd} className={`mt-2 flex items-center gap-2 text-sm font-semibold ${BRAND_TXT} hover:underline ${numbered ? "ml-9" : ""}`}>
+        <Plus size={14} /> {addLabel}
+      </button>
+    </div>
+  );
+}
+
 function TabDescription({ desc, setDesc }) {
   const addBullet    = () => setDesc((d) => ({ ...d, bulletPoints: [...d.bulletPoints, ""] }));
   const removeBullet = (i) => setDesc((d) => ({ ...d, bulletPoints: d.bulletPoints.filter((_, idx) => idx !== i) }));
   const updateBullet = (i, v) => setDesc((d) => ({ ...d, bulletPoints: d.bulletPoints.map((x, idx) => idx === i ? v : x) }));
   return (
     <div className="space-y-8">
-      <SectionTitle icon={FileText} label="Product Description" />
-      <label className="block text-sm font-semibold text-ink-800">
+      <SectionTitle icon={FileText} label="Product description" />
+      <label className={labelCls}>
         Product Description
         <textarea value={desc.productDescription}
           onChange={(e) => setDesc((d) => ({ ...d, productDescription: e.target.value }))}
           rows={5} className={`${inp} resize-none`} />
       </label>
 
-      <SectionTitle icon={Zap} label="Bullet Points" />
-      <div className="space-y-2.5">
-        {desc.bulletPoints.map((bp, i) => (
-          <div key={i} className="flex items-center gap-3">
-            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-amber-100 text-xs font-bold text-amber-700">{i + 1}</span>
-            <input value={bp} onChange={(e) => updateBullet(i, e.target.value)}
-              placeholder={`Bullet point ${i + 1}`}
-              className="flex-1 rounded-card border border-slate-200 px-3.5 py-2.5 text-sm outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition-all shadow-sm hover:border-slate-300" />
-            {desc.bulletPoints.length > 1 && (
-              <button onClick={() => removeBullet(i)} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-card text-slate-400 hover:bg-red-50 hover:text-red-500 transition-colors">
-                <X size={14} />
-              </button>
-            )}
-          </div>
-        ))}
-        <button onClick={addBullet} className="flex items-center gap-2 text-sm font-semibold text-amber-600 hover:text-amber-700 transition-colors mt-2 ml-9">
-          <Plus size={14} /> Add bullet point
-        </button>
-      </div>
+      <SectionTitle icon={Zap} label="Bullet points" />
+      <BulletEditor items={desc.bulletPoints} onAdd={addBullet} onRemove={removeBullet} onUpdate={updateBullet}
+        placeholder="Bullet point" addLabel="Add bullet point" numbered />
 
-      <SectionTitle icon={Search} label="Search & Meta Keywords" />
+      <SectionTitle icon={Search} label="Search and meta keywords" />
       <div className="grid gap-5 md:grid-cols-2">
-        <label className="block text-sm font-semibold text-ink-800">
+        <label className={labelCls}>
           Metadata <span className="text-xs font-normal text-slate-400">(space separated)</span>
           <input value={desc.metadata} onChange={(e) => setDesc((d) => ({ ...d, metadata: e.target.value }))} className={inp} />
         </label>
-        <label className="block text-sm font-semibold text-ink-800">
+        <label className={labelCls}>
           Meta Keywords <span className="text-xs font-normal text-slate-400">(comma separated)</span>
           <input value={desc.metaKeywords} onChange={(e) => setDesc((d) => ({ ...d, metaKeywords: e.target.value }))} className={inp} />
         </label>
-        <label className="block text-sm font-semibold text-ink-800 md:col-span-2">
+        <label className={`${labelCls} md:col-span-2`}>
           Search Keywords <span className="text-xs font-normal text-slate-400">(comma separated)</span>
           <input value={desc.searchKeywords} onChange={(e) => setDesc((d) => ({ ...d, searchKeywords: e.target.value }))} className={inp} />
         </label>
@@ -792,85 +809,68 @@ function TabProductDetails({ details, setDetails }) {
   const addComp    = () => setDetails((d) => ({ ...d, includedComponents: [...d.includedComponents, ""] }));
   const removeComp = (i) => setDetails((d) => ({ ...d, includedComponents: d.includedComponents.filter((_, idx) => idx !== i) }));
   const updateComp = (i, v) => setDetails((d) => ({ ...d, includedComponents: d.includedComponents.map((x, idx) => idx === i ? v : x) }));
-  const listInp = "flex-1 rounded-card border border-slate-200 px-3.5 py-2.5 text-sm outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition-all shadow-sm hover:border-slate-300";
+  const txt = (label, key, extra = {}) => (
+    <label className={labelCls}>{label}
+      <input value={details[key]} onChange={(e) => upd(key, e.target.value)} className={inp} {...extra} />
+    </label>
+  );
+  const dims = (section) => (
+    <div className="grid gap-5 md:grid-cols-3">
+      {["length", "width", "height"].map((k) => (
+        <label key={k} className={`${labelCls} capitalize`}>{k}
+          <input type="number" value={details[section][k]} onChange={(e) => updDim(section, k, e.target.value)} className={inp} />
+        </label>
+      ))}
+    </div>
+  );
   return (
     <div className="space-y-8">
-      <SectionTitle icon={Tag} label="Target & Type" />
+      <SectionTitle icon={Tag} label="Target and type" />
       <div className="grid gap-5 md:grid-cols-2">
-        <label className="block text-sm font-semibold text-ink-800">Target Audience<input value={details.targetAudienceKeyword} onChange={(e) => upd("targetAudienceKeyword", e.target.value)} className={inp} /></label>
-        <label className="block text-sm font-semibold text-ink-800">Item Type Name<input value={details.itemTypeName} onChange={(e) => upd("itemTypeName", e.target.value)} className={inp} /></label>
-        <label className="block text-sm font-semibold text-ink-800">Generic Keyword<input value={details.genericKeyword} onChange={(e) => upd("genericKeyword", e.target.value)} className={inp} /></label>
-        <label className="block text-sm font-semibold text-ink-800">Occasion<input value={details.occasion} onChange={(e) => upd("occasion", e.target.value)} className={inp} /></label>
-        <label className="block text-sm font-semibold text-ink-800">Theme<input value={details.theme} onChange={(e) => upd("theme", e.target.value)} className={inp} /></label>
-        <label className="block text-sm font-semibold text-ink-800">Item Shape / Fit<input value={details.itemShape} onChange={(e) => upd("itemShape", e.target.value)} className={inp} /></label>
+        {txt("Target Audience", "targetAudienceKeyword")}
+        {txt("Item Type Name", "itemTypeName")}
+        {txt("Generic Keyword", "genericKeyword")}
+        {txt("Occasion", "occasion")}
+        {txt("Theme", "theme")}
+        {txt("Item Shape / Fit", "itemShape")}
       </div>
 
       <SectionTitle icon={Box} label="Manufacturer" />
       <div className="grid gap-5 md:grid-cols-2">
-        <label className="block text-sm font-semibold text-ink-800">Manufacturer<input value={details.manufacturer} onChange={(e) => upd("manufacturer", e.target.value)} className={inp} /></label>
-        <label className="block text-sm font-semibold text-ink-800">Manufacturer Contact<input value={details.manufacturerContactInfo} onChange={(e) => upd("manufacturerContactInfo", e.target.value)} className={inp} /></label>
-        <label className="block text-sm font-semibold text-ink-800">Model Number<input value={details.modelNumber} onChange={(e) => upd("modelNumber", e.target.value)} className={inp} /></label>
-        <label className="block text-sm font-semibold text-ink-800">Part Number<input value={details.partNumber} onChange={(e) => upd("partNumber", e.target.value)} className={inp} /></label>
-        <label className="block text-sm font-semibold text-ink-800">Material<input value={details.material} onChange={(e) => upd("material", e.target.value)} className={inp} /></label>
+        {txt("Manufacturer", "manufacturer")}
+        {txt("Manufacturer Contact", "manufacturerContactInfo")}
+        {txt("Model Number", "modelNumber")}
+        {txt("Part Number", "partNumber")}
+        {txt("Material", "material")}
         <div className="grid grid-cols-2 gap-3">
-          <label className="block text-sm font-semibold text-ink-800">Unit Count<input type="number" value={details.unitCount} onChange={(e) => upd("unitCount", e.target.value)} className={inp} /></label>
-          <label className="block text-sm font-semibold text-ink-800">Unit Type<input value={details.unitCountType} onChange={(e) => upd("unitCountType", e.target.value)} className={inp} /></label>
+          <label className={labelCls}>Unit Count<input type="number" value={details.unitCount} onChange={(e) => upd("unitCount", e.target.value)} className={inp} /></label>
+          {txt("Unit Type", "unitCountType")}
         </div>
       </div>
 
-      <SectionTitle icon={Sparkles} label="Special Features" />
-      <div className="space-y-2.5">
-        {details.specialFeatures.map((f, i) => (
-          <div key={i} className="flex items-center gap-3">
-            <input value={f} onChange={(e) => updateFeature(i, e.target.value)} placeholder={`Feature ${i + 1}`} className={listInp} />
-            {details.specialFeatures.length > 1 && (
-              <button onClick={() => removeFeature(i)} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-card text-slate-400 hover:bg-red-50 hover:text-red-500 transition-colors"><X size={14} /></button>
-            )}
-          </div>
-        ))}
-        <button onClick={addFeature} className="flex items-center gap-2 text-sm font-semibold text-amber-600 hover:text-amber-700 transition-colors mt-1"><Plus size={14} /> Add feature</button>
-      </div>
+      <SectionTitle icon={Sparkles} label="Special features" />
+      <BulletEditor items={details.specialFeatures} onAdd={addFeature} onRemove={removeFeature} onUpdate={updateFeature}
+        placeholder="Feature" addLabel="Add feature" />
 
-      <SectionTitle icon={Package} label="Included Components" />
-      <div className="space-y-2.5">
-        {details.includedComponents.map((c, i) => (
-          <div key={i} className="flex items-center gap-3">
-            <input value={c} onChange={(e) => updateComp(i, e.target.value)} placeholder={`Component ${i + 1}`} className={listInp} />
-            {details.includedComponents.length > 1 && (
-              <button onClick={() => removeComp(i)} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-card text-slate-400 hover:bg-red-50 hover:text-red-500 transition-colors"><X size={14} /></button>
-            )}
-          </div>
-        ))}
-        <button onClick={addComp} className="flex items-center gap-2 text-sm font-semibold text-amber-600 hover:text-amber-700 transition-colors mt-1"><Plus size={14} /> Add component</button>
-      </div>
+      <SectionTitle icon={Package} label="Included components" />
+      <BulletEditor items={details.includedComponents} onAdd={addComp} onRemove={removeComp} onUpdate={updateComp}
+        placeholder="Component" addLabel="Add component" />
 
-      <SectionTitle icon={Box} label="Item Dimensions (cm)" />
-      <div className="grid gap-5 md:grid-cols-3">
-        {["length","width","height"].map((k) => (
-          <label key={k} className="block text-sm font-semibold text-ink-800 capitalize">{k}
-            <input type="number" value={details.itemDimensions[k]} onChange={(e) => updDim("itemDimensions", k, e.target.value)} className={inp} />
-          </label>
-        ))}
-      </div>
+      <SectionTitle icon={Box} label="Item dimensions (cm)" />
+      {dims("itemDimensions")}
 
-      <SectionTitle icon={Box} label="Package Dimensions (cm)" />
-      <div className="grid gap-5 md:grid-cols-3">
-        {["length","width","height"].map((k) => (
-          <label key={k} className="block text-sm font-semibold text-ink-800 capitalize">{k}
-            <input type="number" value={details.packageDimensions[k]} onChange={(e) => updDim("packageDimensions", k, e.target.value)} className={inp} />
-          </label>
-        ))}
-      </div>
+      <SectionTitle icon={Box} label="Package dimensions (cm)" />
+      {dims("packageDimensions")}
 
-      <SectionTitle icon={Package} label="Weight & Packaging" />
+      <SectionTitle icon={Package} label="Weight and packaging" />
       <div className="grid gap-5 md:grid-cols-2">
-        <label className="block text-sm font-semibold text-ink-800">Item Weight<input type="number" value={details.itemWeight} onChange={(e) => upd("itemWeight", e.target.value)} className={inp} /></label>
-        <label className="block text-sm font-semibold text-ink-800">Weight Unit<select value={details.itemWeightUnit} onChange={(e) => upd("itemWeightUnit", e.target.value)} className={selectInp}><option>grams</option><option>kg</option><option>lbs</option><option>oz</option></select></label>
-        <label className="block text-sm font-semibold text-ink-800">Package Weight (grams)<input type="number" value={details.packageWeight} onChange={(e) => upd("packageWeight", e.target.value)} className={inp} /></label>
-        <label className="block text-sm font-semibold text-ink-800">Packaging Type<input value={details.packagingType} onChange={(e) => upd("packagingType", e.target.value)} className={inp} /></label>
-        <label className="block text-sm font-semibold text-ink-800">Source Type<select value={details.sourceType} onChange={(e) => upd("sourceType", e.target.value)} className={selectInp}><option>Manufacturer</option><option>Distributor</option><option>Reseller</option></select></label>
-        <label className="block text-sm font-semibold text-ink-800">Fulfillment Channel<select value={details.fulfillmentChannel} onChange={(e) => upd("fulfillmentChannel", e.target.value)} className={selectInp}><option>Seller</option><option>Marketplace</option><option>FBA</option></select></label>
-        <label className="block text-sm font-semibold text-ink-800">Number of Packs<input type="number" value={details.numberOfPacks} onChange={(e) => upd("numberOfPacks", e.target.value)} className={inp} /></label>
+        <label className={labelCls}>Item Weight<input type="number" value={details.itemWeight} onChange={(e) => upd("itemWeight", e.target.value)} className={inp} /></label>
+        <label className={labelCls}>Weight Unit<select value={details.itemWeightUnit} onChange={(e) => upd("itemWeightUnit", e.target.value)} className={selectInp}><option>grams</option><option>kg</option><option>lbs</option><option>oz</option></select></label>
+        <label className={labelCls}>Package Weight (grams)<input type="number" value={details.packageWeight} onChange={(e) => upd("packageWeight", e.target.value)} className={inp} /></label>
+        {txt("Packaging Type", "packagingType")}
+        <label className={labelCls}>Source Type<select value={details.sourceType} onChange={(e) => upd("sourceType", e.target.value)} className={selectInp}><option>Manufacturer</option><option>Distributor</option><option>Reseller</option></select></label>
+        <label className={labelCls}>Fulfillment Channel<select value={details.fulfillmentChannel} onChange={(e) => upd("fulfillmentChannel", e.target.value)} className={selectInp}><option>Seller</option><option>Marketplace</option><option>FBA</option></select></label>
+        <label className={labelCls}>Number of Packs<input type="number" value={details.numberOfPacks} onChange={(e) => upd("numberOfPacks", e.target.value)} className={inp} /></label>
       </div>
     </div>
   );
@@ -882,34 +882,31 @@ function TabImages({ images, setImages }) {
   const updateImage = (i, v) => setImages((p) => p.map((x, idx) => idx === i ? v : x));
   return (
     <div className="space-y-6">
-      <SectionTitle icon={Image} label="Product Images" />
+      <SectionTitle icon={Image} label="Product images" />
       <div className="space-y-3">
         {images.map((url, i) => (
           <div key={i} className="flex items-start gap-4">
-            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-card border border-slate-200 bg-slate-50 overflow-hidden shadow-sm">
+            <div className={`flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden ${RCTL} border border-stone-200 bg-stone-50`}>
               {url
-                ? <img src={url} alt="" className="h-full w-full object-cover" onError={(e) => { e.target.style.display="none"; }} />
+                ? <img src={url} alt="" className="h-full w-full object-cover" onError={(e) => { e.target.style.display = "none"; }} />
                 : <ImageIcon size={18} className="text-slate-300" />}
             </div>
             <div className="flex-1">
               <div className="flex items-center gap-2">
                 <input value={url} onChange={(e) => updateImage(i, e.target.value)}
-                  placeholder="https://example.com/image.jpg"
-                  className="flex-1 rounded-card border border-slate-200 px-3.5 py-2.5 text-sm outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition-all shadow-sm hover:border-slate-300" />
+                  placeholder="https://example.com/image.jpg" className={listInp} />
                 {images.length > 1 && (
-                  <button onClick={() => removeImage(i)} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-card text-slate-400 hover:bg-red-50 hover:text-red-500 transition-colors">
-                    <Trash2 size={15} />
-                  </button>
+                  <button onClick={() => removeImage(i)} className={`${iconRemove} !h-10 !w-10`}><Trash2 size={15} /></button>
                 )}
               </div>
               <p className="mt-1.5 text-xs text-slate-400">
-                {i === 0 ? <span className="text-amber-600 font-medium">★ Main listing image</span> : `Image ${i + 1}`}
+                {i === 0 ? <span className={`font-medium ${BRAND_TXT}`}>★ Main listing image</span> : `Image ${i + 1}`}
               </p>
             </div>
           </div>
         ))}
         <button onClick={addImage}
-          className="flex w-full items-center justify-center gap-2 rounded-card border-2 border-dashed border-amber-200 py-3.5 text-sm font-semibold text-amber-600 hover:border-amber-400 hover:bg-amber-50 transition-all mt-2">
+          className={`mt-2 flex w-full items-center justify-center gap-2 ${RCTL} border-2 border-dashed ${LINE} py-3.5 text-sm font-semibold ${BRAND_TXT} transition-all hover:bg-[rgb(var(--tint-100))]`}>
           <Plus size={15} /> Add image URL
         </button>
       </div>
@@ -930,31 +927,36 @@ function TabVariants({ attributesMeta, setAttributesMeta, variants, setVariants,
 
 function TabSafety({ safety, setSafety }) {
   const upd = (k, v) => setSafety((s) => ({ ...s, [k]: v }));
+  const txt = (label, key, cls = "") => (
+    <label className={`${labelCls} ${cls}`}>{label}
+      <input value={safety[key]} onChange={(e) => upd(key, e.target.value)} className={inp} />
+    </label>
+  );
   return (
     <div className="space-y-8">
-      <SectionTitle icon={Shield} label="Origin & Compliance" />
+      <SectionTitle icon={Shield} label="Origin and compliance" />
       <div className="grid gap-5 md:grid-cols-2">
-        <label className="block text-sm font-semibold text-ink-800">Country / Region of Origin<input value={safety.countryRegionOfOrigin} onChange={(e) => upd("countryRegionOfOrigin", e.target.value)} className={inp} /></label>
-        <label className="block text-sm font-semibold text-ink-800">Dangerous Goods Regulation<select value={safety.dangerousGoodsRegulation} onChange={(e) => upd("dangerousGoodsRegulation", e.target.value)} className={selectInp}><option value="No">No</option><option value="Yes">Yes</option></select></label>
-        <label className="block text-sm font-semibold text-ink-800">Buyer Age Restriction<input value={safety.buyerAgeRestriction} onChange={(e) => upd("buyerAgeRestriction", e.target.value)} className={inp} /></label>
-        <label className="block text-sm font-semibold text-ink-800">Regulatory Compliance Certification<input value={safety.regulatoryComplianceCertification} onChange={(e) => upd("regulatoryComplianceCertification", e.target.value)} className={inp} /></label>
-        <label className="block text-sm font-semibold text-ink-800 md:col-span-2">Mandatory Cautionary Statement<input value={safety.mandatoryCautionaryStatement} onChange={(e) => upd("mandatoryCautionaryStatement", e.target.value)} className={inp} /></label>
-        <label className="block text-sm font-semibold text-ink-800">Safety Attestation<input value={safety.safetyAttestation} onChange={(e) => upd("safetyAttestation", e.target.value)} className={inp} /></label>
-        <label className="block text-sm font-semibold text-ink-800">Safety Attestation Address<input value={safety.safetyAttestationAddress} onChange={(e) => upd("safetyAttestationAddress", e.target.value)} className={inp} /></label>
+        {txt("Country / Region of Origin", "countryRegionOfOrigin")}
+        <label className={labelCls}>Dangerous Goods Regulation<select value={safety.dangerousGoodsRegulation} onChange={(e) => upd("dangerousGoodsRegulation", e.target.value)} className={selectInp}><option value="No">No</option><option value="Yes">Yes</option></select></label>
+        {txt("Buyer Age Restriction", "buyerAgeRestriction")}
+        {txt("Regulatory Compliance Certification", "regulatoryComplianceCertification")}
+        {txt("Mandatory Cautionary Statement", "mandatoryCautionaryStatement", "md:col-span-2")}
+        {txt("Safety Attestation", "safetyAttestation")}
+        {txt("Safety Attestation Address", "safetyAttestationAddress")}
       </div>
-      <SectionTitle icon={Package} label="Shipping & Gift" />
+      <SectionTitle icon={Package} label="Shipping and gift" />
       <div className="flex flex-wrap gap-4">
-        {[["shipsGlobally","Ships Globally"],["giftMessageAvailable","Gift Message Available"],["giftWrapAvailable","Gift Wrap Available"]].map(([k, label]) => (
-          <label key={k} className={`flex items-center gap-3 cursor-pointer rounded-card border-2 px-4 py-3 transition-all ${
-            safety[k] ? "border-amber-300 bg-amber-50" : "border-slate-200 bg-white hover:border-slate-300"
+        {[["shipsGlobally", "Ships Globally"], ["giftMessageAvailable", "Gift Message Available"], ["giftWrapAvailable", "Gift Wrap Available"]].map(([k, label]) => (
+          <label key={k} className={`flex cursor-pointer items-center gap-3 ${RCTL} border-2 px-4 py-3 transition-all ${
+            safety[k] ? `${LINE} ${TINT}` : "border-stone-200 bg-white hover:border-stone-300"
           }`}>
-            <div className={`flex h-5 w-5 items-center justify-center rounded-control border-2 transition-all ${
-              safety[k] ? "border-amber-500 bg-amber-500" : "border-slate-300 bg-white"
+            <div className={`flex h-5 w-5 items-center justify-center rounded border-2 transition-all ${
+              safety[k] ? "border-[rgb(var(--brand))] bg-[rgb(var(--brand))]" : "border-stone-300 bg-white"
             }`}>
               {safety[k] && <Check size={11} className="text-white" strokeWidth={3} />}
             </div>
             <input type="checkbox" checked={safety[k]} onChange={(e) => upd(k, e.target.checked)} className="sr-only" />
-            <span className="text-sm font-semibold text-ink-800">{label}</span>
+            <span className="text-sm font-semibold text-slate-800">{label}</span>
           </label>
         ))}
       </div>
@@ -965,44 +967,44 @@ function TabSafety({ safety, setSafety }) {
 function TabSeo({ seo, setSeo, slug, setSlug, setSlugEdited, productName }) {
   const descLen  = seo.metaDesc.length;
   const titleLen = seo.metaTitle.length;
-  const descColor = descLen > 160 ? "#ef4444" : descLen > 130 ? "#f59e0b" : descLen > 0 ? "#22c55e" : "#94a3b8";
+  const descColor = descLen > 160 ? "#b4475a" : descLen > 130 ? "#b7791f" : descLen > 0 ? "#2f7d5b" : "#94a3b8";
   return (
     <div className="space-y-6">
-      <SectionTitle icon={Search} label="SEO Settings" />
-      <label className="block text-sm font-semibold text-ink-800">
-        <div className="flex items-center justify-between mb-1">
+      <SectionTitle icon={Search} label="SEO settings" />
+      <label className={labelCls}>
+        <div className="mb-1 flex items-center justify-between">
           <span>Meta Title</span>
-          <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${titleLen > 60 ? "bg-red-100 text-red-600" : "bg-slate-100 text-slate-500"}`}>{titleLen}/60</span>
+          <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${titleLen > 60 ? "bg-rose-100 text-rose-700" : "bg-stone-100 text-slate-500"}`}>{titleLen}/60</span>
         </div>
         <input value={seo.metaTitle} onChange={(e) => setSeo((s) => ({ ...s, metaTitle: e.target.value }))} maxLength={70} className={inp} />
       </label>
-      <label className="block text-sm font-semibold text-ink-800">
-        <div className="flex items-center justify-between mb-1">
+      <label className={labelCls}>
+        <div className="mb-1 flex items-center justify-between">
           <span>Meta Description</span>
-          <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100" style={{ color: descColor }}>{descLen}/160</span>
+          <span className="rounded-full bg-stone-100 px-2 py-0.5 text-xs font-semibold" style={{ color: descColor }}>{descLen}/160</span>
         </div>
         <textarea value={seo.metaDesc} onChange={(e) => setSeo((s) => ({ ...s, metaDesc: e.target.value }))} rows={3} className={`${inp} resize-none`} />
       </label>
-      <label className="block text-sm font-semibold text-ink-800">
-        <div className="flex items-center justify-between mb-1">
+      <label className={labelCls}>
+        <div className="mb-1 flex items-center justify-between">
           <span>URL Slug</span>
-          {slug && <span className="text-xs text-slate-400 font-mono bg-slate-100 px-2 py-0.5 rounded-control">/products/{slug}</span>}
+          {slug && <span className={`${RCTL} bg-stone-100 px-2 py-0.5 font-mono text-xs text-slate-500`}>/products/{slug}</span>}
         </div>
-        <div className="mt-1 flex overflow-hidden rounded-card border border-slate-200 focus-within:border-amber-500 focus-within:ring-2 focus-within:ring-amber-500/20 shadow-sm transition-all">
-          <span className="flex items-center bg-slate-100 px-3 text-xs text-slate-500 border-r border-slate-200 whitespace-nowrap font-mono">/products/</span>
+        <div className={`mt-1 flex overflow-hidden ${RCTL} border border-stone-200 transition-all focus-within:border-[rgb(var(--brand))] focus-within:ring-2 focus-within:ring-[rgb(var(--brand)/0.18)]`}>
+          <span className="flex items-center whitespace-nowrap border-r border-stone-200 bg-stone-100 px-3 font-mono text-xs text-slate-500">/products/</span>
           <input value={slug} onChange={(e) => { setSlug(generateSlug(e.target.value)); setSlugEdited(true); }}
-            className="flex-1 bg-white px-3 py-2.5 text-sm font-mono text-amber-600 outline-none" />
+            className={`flex-1 bg-white px-3 py-2.5 font-mono text-sm outline-none ${BRAND_TXT}`} />
         </div>
       </label>
-      <div className="rounded-card border border-slate-200 bg-slate-50/80 p-5">
-        <div className="flex items-center gap-2 mb-4">
+      <div className={`${RCARD} border border-stone-200 bg-stone-50/80 p-5`}>
+        <div className="mb-4 flex items-center gap-2">
           <Search size={13} className="text-slate-400" />
-          <p className="text-xs font-bold uppercase tracking-wide text-slate-400">Google Search Preview</p>
+          <p className={eyebrow}>Google search preview</p>
         </div>
-        <div className="rounded-card border border-slate-200 bg-white p-4 shadow-sm">
-          <p className="mb-0.5 text-xs text-emerald-600 font-medium">yoursite.com/products/<span>{slug || "product-slug"}</span></p>
-          <p className="text-lg font-medium leading-snug text-slate-400 cursor-default">{seo.metaTitle || productName || "Product Title — Your Store"}</p>
-          <p className="mt-1 text-sm leading-snug text-ink-700">{seo.metaDesc ? seo.metaDesc.slice(0, 160) : "Your meta description will appear here…"}</p>
+        <div className={`${RCTL} border border-stone-200 bg-white p-4`}>
+          <p className="mb-0.5 text-xs font-medium text-emerald-700">yoursite.com/products/<span>{slug || "product-slug"}</span></p>
+          <p className="cursor-default text-lg font-medium leading-snug text-slate-500">{seo.metaTitle || productName || "Product Title — Your Store"}</p>
+          <p className="mt-1 text-sm leading-snug text-slate-700">{seo.metaDesc ? seo.metaDesc.slice(0, 160) : "Your meta description will appear here…"}</p>
         </div>
       </div>
     </div>
@@ -1467,16 +1469,16 @@ export default function EditProduct() {
   };
 
   const tabCls = (t) =>
-    `flex items-center gap-2 px-4 py-3 text-xs font-semibold border-b-2 whitespace-nowrap transition-all ${
+    `-mb-px flex items-center gap-2 border-b-2 px-4 py-3 text-sm font-medium whitespace-nowrap transition-colors ${
       activeTab === t
-        ? "border-amber-500 text-amber-700 bg-amber-50/50"
-        : "border-transparent text-slate-500 hover:text-ink-800 hover:bg-slate-50"
+        ? `border-[rgb(var(--brand))] text-slate-900 bg-[rgb(var(--tint-100)/0.6)]`
+        : "border-transparent text-slate-500 hover:text-slate-800"
     }`;
 
   if (pageLoading) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center gap-3 text-slate-400">
-        <span className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-slate-300 border-t-amber-500" />
+        <span className={`${spinner} !h-6 !w-6`} />
         Loading product…
       </div>
     );
@@ -1485,42 +1487,49 @@ export default function EditProduct() {
   if (loadError) {
     return (
       <div className="flex min-h-[60vh] flex-col items-center justify-center gap-3 text-center">
-        <AlertCircle size={32} className="text-red-400" />
-        <p className="text-sm text-red-500">{loadError}</p>
-        <button onClick={() => navigate("/admin/products")} className="rounded-card border border-slate-200 px-4 py-2 text-sm font-semibold text-ink-700 hover:bg-slate-50">
-          Back to Products
-        </button>
+        <AlertCircle size={32} className="text-rose-400" />
+        <p className="text-sm text-rose-700">{loadError}</p>
+        <button onClick={() => navigate("/admin/products")} className={btnGhost}>Back to products</button>
       </div>
     );
   }
 
   return (
-    <div className="space-y-5 min-h-screen bg-slate-50/50">
-      <div className="rounded-card border border-line bg-surface-raised p-6 shadow-card">
-        <div className="flex items-center gap-4">
-          <button onClick={() => navigate("/admin/products")}
-            className="flex items-center gap-2 rounded-card border border-slate-200 px-3.5 py-2 text-sm font-semibold text-ink-700 hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm">
-            <ArrowLeft size={15} /> Back
-          </button>
-          <div>
-            <p className="text-xs font-bold uppercase tracking-widest text-amber-500 mb-0.5">Inventory Command Center</p>
-            <h1 className="text-[1.65rem] font-bold tracking-tight text-ink-950 flex items-center gap-2.5">
-              <div className="flex h-9 w-9 items-center justify-center rounded-card bg-gradient-to-br from-amber-500 to-purple-600 shadow-md shadow-amber-500/30">
-                <PackagePlus size={18} className="text-white" />
-              </div>
-              Edit Listing — {form.productName || "Untitled"}
+    <div className="space-y-6">
+      {/* Hero */}
+      <section className={`relative overflow-hidden ${RCARD} bg-gradient-to-br from-[rgb(var(--hero-a))] via-[rgb(var(--hero-b))] to-[rgb(var(--hero-c))] p-6 ring-1 ring-[rgb(var(--brand-line)/0.4)] sm:p-8`}>
+        <GoldLine className="inset-x-16" />
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+          <div className="max-w-2xl">
+            <button onClick={() => navigate("/admin/products")}
+              className={`mb-4 inline-flex items-center gap-2 ${RCTL} border border-[rgb(var(--brand-line)/0.5)] bg-white/80 px-3.5 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-white`}>
+              <ArrowLeft size={15} /> Back to products
+            </button>
+            <p className="inline-flex items-center gap-2 text-sm font-medium text-[rgb(var(--brand-dark))]">
+              <Gem size={14} strokeWidth={1.6} /> Inventory command center
+            </p>
+            <h1 className="mt-2 text-3xl font-semibold leading-tight tracking-tight text-slate-900 sm:text-4xl" style={serif}>
+              Edit listing
             </h1>
+            <p className="mt-2 truncate text-sm text-slate-600">{form.productName || "Untitled product"}</p>
+          </div>
+          <div className="flex divide-x divide-[rgb(var(--brand-line)/0.4)]">
+            <GlanceStat value={variants.length} label="variations" />
+            <GlanceStat value={images.filter((u) => u.trim()).length} label="images" />
+            <GlanceStat value={attributesMeta.length} label="attributes" />
           </div>
         </div>
-      </div>
+      </section>
 
-      <div className="overflow-hidden rounded-card border border-line bg-surface-raised shadow-card">
-        <div className="flex overflow-x-auto border-b border-slate-100 scrollbar-none bg-white">
+      {/* Form panel */}
+      <div className={`relative overflow-hidden ${RCARD} bg-white ring-1 ring-stone-200`}>
+        <GoldLine />
+        <div className="scrollbar-none flex overflow-x-auto border-b border-stone-200 bg-gradient-to-r from-[rgb(var(--tint-100))] to-[rgb(var(--tint-200))] px-2">
           {TABS.map((t) => {
             const Icon = t.icon;
             return (
               <button key={t.id} className={tabCls(t.id)} onClick={() => setActiveTab(t.id)}>
-                <Icon size={13} /> {t.label}
+                <Icon size={14} strokeWidth={1.6} /> {t.label}
               </button>
             );
           })}
@@ -1551,23 +1560,17 @@ export default function EditProduct() {
         </div>
 
         {submitError && (
-          <div className="mx-6 mb-4 flex items-center gap-3 rounded-card border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+          <div className={`mx-6 mb-4 flex items-center gap-3 ${RCTL} border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800`}>
             <AlertCircle size={16} className="shrink-0" />
             {submitError}
           </div>
         )}
 
-        <div className="flex items-center justify-end gap-3 border-t border-slate-100 px-6 py-4 bg-slate-50/50">
-          <button onClick={() => navigate("/admin/products")} className="rounded-card border border-slate-200 px-5 py-2.5 text-sm font-semibold text-ink-700 hover:bg-slate-100 transition-all">
-            Cancel
-          </button>
-          <button
-            onClick={handleSubmit}
-            disabled={submitting}
-            className="inline-flex items-center gap-2.5 rounded-card bg-amber-600 px-6 py-2.5 text-sm font-bold text-white shadow-md shadow-amber-500/30 disabled:cursor-not-allowed disabled:opacity-50 hover:bg-amber-700 transition-all"
-          >
+        <div className="flex items-center justify-end gap-3 border-t border-stone-200 bg-stone-50/60 px-6 py-4">
+          <button onClick={() => navigate("/admin/products")} className={btnGhost}>Cancel</button>
+          <button onClick={handleSubmit} disabled={submitting} className={btnPrimary}>
             {submitting && <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />}
-            {submitting ? "Saving…" : "Save Changes"}
+            {submitting ? "Saving…" : "Save changes"}
           </button>
         </div>
       </div>

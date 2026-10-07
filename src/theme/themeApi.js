@@ -35,8 +35,6 @@ export async function fetchThemeSettings() {
 export async function saveThemeSettings(theme) {
   await http.put(THEME_PATH, { theme }, { headers: authHeaders() });
 }
-<<<<<<< HEAD
-=======
 
 /* ---- Vendor panel theme: overrides saved per vendor, layered on the Super Admin theme ---- */
 const vendorParams = (vendorId) => ({ vendor: vendorId });
@@ -60,4 +58,3 @@ export async function restoreAdminTheme() {
   const res = await http.put(THEME_PATH, { restore: "previous" }, { headers: authHeaders() });
   return res.data?.theme || null;
 }
->>>>>>> b77933a (scss used in this)

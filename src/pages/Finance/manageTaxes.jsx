@@ -1,145 +1,49 @@
 import React, { useState } from "react";
+import {
+  AlertTriangle,
+  BadgePercent,
+  CalendarClock,
+  Check,
+  ChevronDown,
+  FileCheck2,
+  Gem,
+  LifeBuoy,
+  ListChecks,
+  Receipt,
+  RotateCw,
+  ShieldCheck,
+  Table2,
+} from "lucide-react";
 
-const styles = `
-.manage-taxes-page {
-  --amz-blue: #007185;
-  --amz-blue-dark: #003553;
-  --amz-text: #0f1111;
-  --amz-text-secondary: #565959;
-  --amz-border: #d5d9d9;
-  --amz-bg: #eaeded;
-  --amz-card-bg: #ffffff;
-  --amz-green: #067d62;
-  --amz-green-bg: #f0fbf6;
-  --amz-orange: #e47911;
-  --amz-orange-bg: #fef4e8;
-  --amz-red: #b12704;
-  --amz-red-bg: #fdf1f0;
+/* ---------- design tokens (same CSS variables as the Dashboard) ---------- */
 
-  font-family: "Amazon Ember", Arial, sans-serif;
-  background: var(--amz-bg);
-  color: var(--amz-text);
-  padding: 24px;
-  min-height: 100vh;
-}
-.manage-taxes-page * { box-sizing: border-box; }
+const serif = { fontFamily: "var(--font-display)" };
+const gold = "text-[rgb(var(--brand-on-dark))]";
 
-.manage-taxes-page .page-header {
-  display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; flex-wrap: wrap; gap: 8px;
-}
-.manage-taxes-page .page-header h1 { font-size: 21px; font-weight: 700; margin: 0; }
-.manage-taxes-page .btn {
-  border: 1px solid var(--amz-border); background: #fff; border-radius: 8px; padding: 9px 16px;
-  font-size: 13px; font-weight: 500; cursor: pointer; color: var(--amz-text);
-}
-.manage-taxes-page .btn:hover { background: #f7f8f8; }
-.manage-taxes-page .btn-primary {
-  background: linear-gradient(to bottom, #f7dfa5, #f0c14b); border: 1px solid #a88734; color: #111;
-}
-.manage-taxes-page .btn-primary:hover { background: linear-gradient(to bottom, #f5d78e, #eeb933); }
+const palettes = [
+  {
+    front: "from-[rgb(var(--a1-f1))] via-[rgb(var(--a1-f2))] to-[rgb(var(--a1-f3))]",
+    back: "from-[rgb(var(--a1-b1))] to-[rgb(var(--a1-b2))]",
+    chip: "from-[rgb(var(--a1))] to-[rgb(var(--a1-dark))]",
+  },
+  {
+    front: "from-[rgb(var(--a2-f1))] via-[rgb(var(--a2-f2))] to-[rgb(var(--a2-f3))]",
+    back: "from-[rgb(var(--a2-b1))] to-[rgb(var(--a2-b2))]",
+    chip: "from-[rgb(var(--a2))] to-[rgb(var(--a2-dark))]",
+  },
+  {
+    front: "from-[rgb(var(--a3-f1))] via-[rgb(var(--a3-f2))] to-[rgb(var(--a3-f3))]",
+    back: "from-[rgb(var(--a3-b1))] to-[rgb(var(--a3-b2))]",
+    chip: "from-[rgb(var(--a3))] to-[rgb(var(--a3-dark))]",
+  },
+  {
+    front: "from-[rgb(var(--tint-100))] via-[rgb(var(--tint-200))] to-[rgb(var(--tint-300))]",
+    back: "from-[rgb(var(--p4-b1))] to-[rgb(var(--p4-b2))]",
+    chip: "from-[rgb(var(--brand))] to-[rgb(var(--brand-dark))]",
+  },
+];
 
-/* GSTIN status card */
-.manage-taxes-page .gstin-card {
-  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
-  background: var(--amz-card-bg); border: 1px solid var(--amz-border); border-radius: 8px; padding: 16px 18px; margin-bottom: 16px;
-}
-.manage-taxes-page .gstin-left { display: flex; align-items: center; gap: 14px; }
-.manage-taxes-page .gstin-icon {
-  width: 42px; height: 42px; border-radius: 8px; background: var(--amz-green-bg); display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-}
-.manage-taxes-page .gstin-detail .gstin-number { font-size: 15px; font-weight: 700; color: var(--amz-text); }
-.manage-taxes-page .gstin-detail .gstin-sub { font-size: 12px; color: var(--amz-text-secondary); margin-top: 2px; }
-.manage-taxes-page .gstin-status {
-  display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 700;
-  background: var(--amz-green-bg); color: var(--amz-green);
-}
-.manage-taxes-page .gstin-status .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--amz-green); }
-
-/* summary strip */
-.manage-taxes-page .summary-strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 16px; }
-@media (max-width: 1000px) { .manage-taxes-page .summary-strip { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 560px) { .manage-taxes-page .summary-strip { grid-template-columns: 1fr; } }
-.manage-taxes-page .summary-card { background: var(--amz-card-bg); border: 1px solid var(--amz-border); border-radius: 8px; padding: 16px; }
-.manage-taxes-page .summary-card .label { font-size: 12px; color: var(--amz-text-secondary); margin-bottom: 6px; }
-.manage-taxes-page .summary-card .amount { font-size: 20px; font-weight: 700; color: var(--amz-text); }
-.manage-taxes-page .summary-card .sub { font-size: 12px; color: var(--amz-text-secondary); margin-top: 4px; }
-
-/* card */
-.manage-taxes-page .card { background: var(--amz-card-bg); border: 1px solid var(--amz-border); border-radius: 8px; overflow: hidden; margin-bottom: 16px; }
-.manage-taxes-page .card-pad { padding: 16px; }
-.manage-taxes-page .card-pad h2 { font-size: 15px; font-weight: 700; margin: 0 0 4px 0; }
-.manage-taxes-page .card-sub { font-size: 12px; color: var(--amz-text-secondary); margin-bottom: 14px; }
-
-/* tabs */
-.manage-taxes-page .tabs { display: flex; gap: 4px; padding: 0 16px; border-bottom: 1px solid var(--amz-border); overflow-x: auto; }
-.manage-taxes-page .tab {
-  padding: 14px 12px; font-size: 13px; font-weight: 500; color: var(--amz-text-secondary);
-  cursor: pointer; border-bottom: 3px solid transparent; white-space: nowrap;
-}
-.manage-taxes-page .tab.active { color: var(--amz-text); border-bottom-color: var(--amz-orange); font-weight: 700; }
-
-/* filter bar */
-.manage-taxes-page .filter-bar { display: flex; align-items: center; gap: 10px; padding: 14px 16px; flex-wrap: wrap; border-bottom: 1px solid var(--amz-border); }
-.manage-taxes-page .filter-pill { border: 1px solid var(--amz-border); border-radius: 8px; padding: 8px 12px; font-size: 13px; background: #fff; cursor: pointer; display: flex; align-items: center; gap: 6px; white-space: nowrap; }
-.manage-taxes-page .filter-pill:hover { background: #f7f8f8; }
-
-/* table */
-.manage-taxes-page table { width: 100%; border-collapse: collapse; font-size: 13px; }
-.manage-taxes-page thead th { text-align: left; padding: 10px 14px; background: #f7f8f8; color: var(--amz-text-secondary); font-weight: 700; font-size: 12px; border-bottom: 1px solid var(--amz-border); white-space: nowrap; }
-.manage-taxes-page tbody td { padding: 12px 14px; border-bottom: 1px solid #f0f2f2; color: var(--amz-text); }
-.manage-taxes-page tbody tr:last-child td { border-bottom: none; }
-.manage-taxes-page tbody tr:hover { background: #fafafa; }
-
-.manage-taxes-page .badge { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; white-space: nowrap; }
-.manage-taxes-page .badge-dot { width: 6px; height: 6px; border-radius: 50%; }
-.manage-taxes-page .badge-filed { background: var(--amz-green-bg); color: var(--amz-green); }
-.manage-taxes-page .badge-filed .badge-dot { background: var(--amz-green); }
-.manage-taxes-page .badge-due { background: var(--amz-orange-bg); color: #8a5a00; }
-.manage-taxes-page .badge-due .badge-dot { background: var(--amz-orange); }
-.manage-taxes-page .badge-overdue { background: var(--amz-red-bg); color: var(--amz-red); }
-.manage-taxes-page .badge-overdue .badge-dot { background: var(--amz-red); }
-
-.manage-taxes-page .action-link { color: var(--amz-blue); text-decoration: none; font-size: 13px; font-weight: 500; }
-.manage-taxes-page .action-link:hover { text-decoration: underline; }
-
-/* state tax table (rate breakdown) */
-.manage-taxes-page .rate-table td, .manage-taxes-page .rate-table th { text-align: right; }
-.manage-taxes-page .rate-table td:first-child, .manage-taxes-page .rate-table th:first-child { text-align: left; }
-
-/* layout */
-.manage-taxes-page .layout { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; align-items: start; }
-@media (max-width: 900px) { .manage-taxes-page .layout { grid-template-columns: 1fr; } }
-.manage-taxes-page .sidebar-note { font-size: 12px; color: var(--amz-text-secondary); line-height: 1.5; }
-.manage-taxes-page .policy-link { display: inline-block; margin-top: 10px; color: var(--amz-blue); text-decoration: none; font-size: 13px; }
-.manage-taxes-page .policy-link:hover { text-decoration: underline; }
-
-.manage-taxes-page .checklist-item { display: flex; align-items: flex-start; gap: 10px; padding: 10px 0; border-bottom: 1px solid #f0f2f2; }
-.manage-taxes-page .checklist-item:last-child { border-bottom: none; }
-.manage-taxes-page .checklist-item .check-icon { flex-shrink: 0; margin-top: 1px; }
-.manage-taxes-page .checklist-item .check-text { font-size: 13px; color: var(--amz-text); }
-.manage-taxes-page .checklist-item .check-sub { font-size: 12px; color: var(--amz-text-secondary); margin-top: 2px; }
-`;
-
-const ChevronDown = () => (
-  <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-    <path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
-
-const GstIcon = () => (
-  <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
-    <rect x="2" y="4" width="18" height="14" rx="2" stroke="#067D62" strokeWidth="1.5" />
-    <path d="M2 8h18" stroke="#067D62" strokeWidth="1.5" />
-    <path d="M5 13h6" stroke="#067D62" strokeWidth="1.5" strokeLinecap="round" />
-  </svg>
-);
-
-const CheckIcon = ({ done }) => (
-  <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-    <circle cx="9" cy="9" r="8" fill={done ? "#067D62" : "#F0F2F2"} stroke={done ? "none" : "#D5D9D9"} strokeWidth="1.2" />
-    {done && <path d="M5.5 9.2l2.2 2.2 4.8-5" stroke="#fff" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />}
-  </svg>
-);
+/* ---------- data (unchanged) ---------- */
 
 const TABS = [
   { key: "all", label: "All filings" },
@@ -164,10 +68,181 @@ const RATE_BREAKDOWN = [
 ];
 
 const statusMeta = {
-  filed: { label: "Filed", cls: "badge-filed" },
-  due: { label: "Due", cls: "badge-due" },
-  overdue: { label: "Overdue", cls: "badge-overdue" },
+  filed: { label: "Filed", pill: "bg-emerald-50 text-emerald-800 ring-emerald-200", dot: "bg-emerald-500" },
+  due: { label: "Due", pill: "bg-amber-50 text-amber-800 ring-amber-200", dot: "bg-amber-500" },
+  overdue: { label: "Overdue", pill: "bg-rose-50 text-rose-800 ring-rose-200", dot: "bg-rose-500" },
 };
+
+const CHECKLIST = [
+  { text: "GSTIN verified", sub: "Confirmed on 3 Jan 2026", done: true },
+  { text: "PAN linked", sub: "Matches business registration", done: true },
+  { text: "GSTR-3B for Jun 2026 pending", sub: "Due 20 Jul 2026", done: false },
+];
+
+const filingCount = (status) => FILINGS.filter((f) => f.status === status).length;
+
+const SUMMARY = [
+  {
+    label: "Tax collected (this month)",
+    value: "₹27,825.00",
+    icon: Receipt,
+    palette: palettes[0],
+    helper: "1–16 Jul 2026",
+    backTitle: "Tax by rate",
+    backRows: RATE_BREAKDOWN.map((r) => ({ label: `${r.category} (${r.rate})`, value: r.tax })),
+  },
+  {
+    label: "Next filing due",
+    value: "GSTR-3B",
+    icon: CalendarClock,
+    palette: palettes[1],
+    helper: "Due 20 Jul 2026",
+    backTitle: "Filing status",
+    backRows: [
+      { label: "Filed", value: filingCount("filed") },
+      { label: "Due", value: filingCount("due") },
+      { label: "Overdue", value: filingCount("overdue"), valueClass: "text-rose-300" },
+    ],
+  },
+  {
+    label: "TCS deducted by Amazon",
+    value: "₹4,218.00",
+    icon: BadgePercent,
+    palette: palettes[3],
+    helper: "Last 30 days",
+    backTitle: "About TCS",
+    backRows: [
+      { label: "Deducted", value: "₹4,218.00", valueClass: gold },
+      { label: "Period", value: "Last 30 days" },
+    ],
+  },
+  {
+    label: "Overdue filings",
+    value: filingCount("overdue"),
+    icon: AlertTriangle,
+    palette: palettes[2],
+    helper: "Review now",
+    backTitle: "Overdue",
+    backRows: FILINGS.filter((f) => f.status === "overdue").map((f) => ({
+      label: `${f.type}, ${f.period}`,
+      value: `Due ${f.dueDate}`,
+    })),
+  },
+];
+
+const textLink =
+  "text-sm font-medium text-[rgb(var(--brand-text))] hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-[rgb(var(--brand-line))]";
+
+/* ---------- building blocks (same look as Dashboard) ---------- */
+
+function GoldLine({ className = "inset-x-10" }) {
+  return (
+    <span
+      className={`pointer-events-none absolute top-0 h-px bg-gradient-to-r from-transparent via-[rgb(var(--brand-line))] to-transparent ${className}`}
+    />
+  );
+}
+
+function FlipCard({ label, palette, front, back, className = "h-44" }) {
+  const [flipped, setFlipped] = useState(false);
+
+  return (
+    <div
+      className={`${className} transition-transform duration-300 hover:-translate-y-0.5 motion-reduce:transition-none motion-reduce:hover:translate-y-0`}
+      style={{ perspective: "1400px" }}
+    >
+      <button
+        type="button"
+        aria-pressed={flipped}
+        aria-label={`${label}: ${flipped ? "show summary" : "show details"}`}
+        onClick={() => setFlipped((value) => !value)}
+        className="relative block h-full w-full rounded-[var(--radius-card)] text-left transition-transform duration-[800ms] ease-out focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[rgb(var(--brand-line))] motion-reduce:transition-none"
+        style={{
+          transformStyle: "preserve-3d",
+          transform: flipped ? "rotateY(180deg)" : "rotateY(0deg)",
+        }}
+      >
+        <span
+          aria-hidden={flipped}
+          className={`absolute inset-0 flex flex-col overflow-hidden rounded-[var(--radius-card)] bg-gradient-to-br ${palette.front} p-5 text-slate-900 ring-1 ring-[rgb(var(--brand-line)/0.35)]`}
+          style={{ backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden" }}
+        >
+          <GoldLine />
+          <span className="relative flex h-full flex-col">{front}</span>
+          <RotateCw size={12} className="absolute bottom-4 right-4 text-slate-400" aria-hidden="true" />
+        </span>
+
+        <span
+          aria-hidden={!flipped}
+          className={`absolute inset-0 flex flex-col overflow-hidden rounded-[var(--radius-card)] bg-gradient-to-br ${palette.back} p-5 text-white ring-1 ring-[rgb(var(--brand-line)/0.5)]`}
+          style={{
+            backfaceVisibility: "hidden",
+            WebkitBackfaceVisibility: "hidden",
+            transform: "rotateY(180deg)",
+          }}
+        >
+          <GoldLine />
+          <span className="relative flex h-full flex-col">{back}</span>
+        </span>
+      </button>
+    </div>
+  );
+}
+
+function IconChip({ icon: Icon, palette, size = 18 }) {
+  return (
+    <span className={`flex h-9 w-9 items-center justify-center rounded-[var(--radius-control)] bg-gradient-to-br ${palette.chip} text-white`}>
+      <Icon size={size} strokeWidth={1.6} />
+    </span>
+  );
+}
+
+function BackTitle({ children }) {
+  return (
+    <span className={`mb-2 block text-xl font-semibold leading-tight ${gold}`} style={serif}>
+      {children}
+    </span>
+  );
+}
+
+function BackRow({ label, value, valueClass = "text-white" }) {
+  return (
+    <span className="flex items-center justify-between gap-3 border-b border-white/10 py-1.5 text-sm last:border-0">
+      <span className="truncate text-white/60">{label}</span>
+      <span className={`shrink-0 font-semibold ${valueClass}`}>{value}</span>
+    </span>
+  );
+}
+
+function GlanceStat({ icon: Icon, value, label }) {
+  return (
+    <div className="flex items-center gap-3 px-5 first:pl-0 last:pr-0">
+      <Icon size={18} strokeWidth={1.5} className="text-[rgb(var(--brand-text))]" />
+      <div>
+        <p className="text-2xl font-semibold leading-none text-slate-900" style={serif}>
+          {value}
+        </p>
+        <p className="mt-1 text-xs text-slate-500">{label}</p>
+      </div>
+    </div>
+  );
+}
+
+function Panel({ icon: Icon, title, subtitle, children }) {
+  return (
+    <section className="relative rounded-[var(--radius-card)] bg-white p-6 ring-1 ring-stone-200 sm:p-7">
+      <GoldLine className="inset-x-10" />
+      <h2 className="flex items-center gap-3 text-xl font-semibold text-slate-900" style={serif}>
+        <Icon size={17} strokeWidth={1.6} className="text-[rgb(var(--brand-text))]" />
+        {title}
+      </h2>
+      {subtitle && <p className="mt-1 text-xs text-slate-500">{subtitle}</p>}
+      <div className="mt-5">{children}</div>
+    </section>
+  );
+}
+
+/* ---------- page ---------- */
 
 export default function ManageTaxes() {
   const [activeTab, setActiveTab] = useState("all");
@@ -175,168 +250,276 @@ export default function ManageTaxes() {
   const filtered = activeTab === "all" ? FILINGS : FILINGS.filter((f) => f.status === activeTab);
 
   return (
-    <div className="manage-taxes-page">
-      <style>{styles}</style>
+    <div className="space-y-8">
+      {/* Hero */}
+      <section className="relative overflow-hidden rounded-[var(--radius-card)] bg-gradient-to-br from-[rgb(var(--hero-a))] via-[rgb(var(--hero-b))] to-[rgb(var(--hero-c))] p-7 ring-1 ring-[rgb(var(--brand-line)/0.4)] sm:p-10">
+        <GoldLine className="inset-x-16" />
 
-      <div className="page-header">
-        <h1>Manage Taxes</h1>
-        <div style={{ display: "flex", gap: 10 }}>
-          <button className="btn">Download tax report</button>
-          <button className="btn btn-primary">Update GSTIN</button>
-        </div>
-      </div>
+        <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
+          <div className="max-w-2xl">
+            <p className="inline-flex items-center gap-2 text-sm font-medium text-[rgb(var(--brand-dark))]">
+              <Gem size={14} strokeWidth={1.6} />
+              Tax compliance
+            </p>
+            <h1 className="mt-3 text-4xl font-semibold leading-[1.08] tracking-tight text-slate-900 sm:text-5xl" style={serif}>
+              Manage taxes
+            </h1>
+            <p className="mt-4 max-w-xl text-sm leading-relaxed text-slate-600">
+              Keep your GSTIN, filings, and tax collected up to date and avoid filing mismatches.
+            </p>
+          </div>
 
-      <div className="gstin-card">
-        <div className="gstin-left">
-          <div className="gstin-icon"><GstIcon /></div>
-          <div className="gstin-detail">
-            <div className="gstin-number">08ABCDE1234F1Z5</div>
-            <div className="gstin-sub">Registered as Apex Distributors Pvt Ltd · Rajasthan</div>
+          <div className="flex flex-col gap-5 lg:items-end">
+            <div className="flex divide-x divide-[rgb(var(--brand-line)/0.4)]">
+              <GlanceStat icon={FileCheck2} value={filingCount("filed")} label="filings done" />
+              <GlanceStat icon={CalendarClock} value={filingCount("due")} label="due soon" />
+              <GlanceStat icon={AlertTriangle} value={filingCount("overdue")} label="overdue" />
+            </div>
+
+            <div className="flex gap-2">
+              <button
+                type="button"
+                className="rounded-[var(--radius-control)] border border-[rgb(var(--brand-line)/0.5)] bg-white/80 px-3.5 py-2 text-sm font-medium text-slate-900 transition-colors hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-[rgb(var(--brand-line))]"
+              >
+                Download tax report
+              </button>
+              <button
+                type="button"
+                className="rounded-[var(--radius-control)] bg-gradient-to-br from-[rgb(var(--brand))] to-[rgb(var(--brand-dark))] px-3.5 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[rgb(var(--brand-line))]"
+              >
+                Update GSTIN
+              </button>
+            </div>
           </div>
         </div>
-        <span className="gstin-status"><span className="dot" />Verified</span>
-      </div>
+      </section>
 
-      <div className="summary-strip">
-        <div className="summary-card">
-          <div className="label">Tax collected (this month)</div>
-          <div className="amount">₹27,825.00</div>
-          <div className="sub">1–16 Jul 2026</div>
+      {/* GSTIN card */}
+      <section className="relative flex flex-wrap items-center justify-between gap-4 rounded-[var(--radius-card)] bg-white p-5 ring-1 ring-stone-200 sm:px-7">
+        <GoldLine className="inset-x-10" />
+        <div className="flex items-center gap-4">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[var(--radius-control)] bg-emerald-50 text-emerald-700">
+            <ShieldCheck size={22} strokeWidth={1.5} />
+          </span>
+          <div>
+            <div className="text-2xl font-semibold text-slate-900" style={serif}>
+              08ABCDE1234F1Z5
+            </div>
+            <div className="mt-0.5 text-xs text-slate-500">Registered as Apex Distributors Pvt Ltd, Rajasthan</div>
+          </div>
         </div>
-        <div className="summary-card">
-          <div className="label">Next filing due</div>
-          <div className="amount">GSTR-3B</div>
-          <div className="sub">Due 20 Jul 2026</div>
-        </div>
-        <div className="summary-card">
-          <div className="label">TCS deducted by Amazon</div>
-          <div className="amount">₹4,218.00</div>
-          <div className="sub">Last 30 days</div>
-        </div>
-        <div className="summary-card">
-          <div className="label">Overdue filings</div>
-          <div className="amount" style={{ color: "var(--amz-red)" }}>1</div>
-          <div className="sub"><a href="#" style={{ color: "var(--amz-blue)", textDecoration: "none" }}>Review now</a></div>
-        </div>
-      </div>
+        <span className="inline-flex items-center gap-1.5 rounded-[var(--radius-control)] bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-800 ring-1 ring-emerald-200">
+          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+          Verified
+        </span>
+      </section>
 
-      <div className="layout">
-        <div>
-          <div className="card">
-            <div className="tabs">
-              {TABS.map((t) => (
-                <div key={t.key} className={`tab ${activeTab === t.key ? "active" : ""}`} onClick={() => setActiveTab(t.key)}>
-                  {t.label}
-                </div>
+      {/* Summary flip cards */}
+      <section aria-label="Tax summary">
+        <p className="mb-3 flex items-center gap-1.5 text-xs text-slate-500">
+          <RotateCw size={12} />
+          Select a card to flip it for a breakdown.
+        </p>
+        <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+          {SUMMARY.map((item) => (
+            <FlipCard
+              key={item.label}
+              label={item.label}
+              palette={item.palette}
+              front={
+                <>
+                  <span className="flex items-start justify-between gap-3">
+                    <span className="text-sm font-medium text-slate-600">{item.label}</span>
+                    <IconChip icon={item.icon} palette={item.palette} />
+                  </span>
+                  <span className="mt-auto block text-3xl font-semibold tracking-tight text-slate-900" style={serif}>
+                    {item.value}
+                  </span>
+                  <span className="mt-0.5 block pr-6 text-xs text-slate-600">{item.helper}</span>
+                </>
+              }
+              back={
+                <>
+                  <BackTitle>{item.backTitle}</BackTitle>
+                  {item.backRows.length === 0 ? (
+                    <span className="text-sm text-white/60">Nothing to show.</span>
+                  ) : (
+                    item.backRows.map((row) => <BackRow key={row.label} {...row} />)
+                  )}
+                </>
+              }
+            />
+          ))}
+        </div>
+      </section>
+
+      <div className="grid items-start gap-6 lg:grid-cols-[2fr_1fr]">
+        <div className="space-y-6">
+          {/* Filings */}
+          <section className="relative overflow-hidden rounded-[var(--radius-card)] bg-white ring-1 ring-stone-200">
+            <GoldLine className="inset-x-10" />
+
+            <div className="flex gap-1 overflow-x-auto border-b border-stone-200 px-4 pt-3">
+              {TABS.map((t) => {
+                const active = activeTab === t.key;
+                return (
+                  <button
+                    key={t.key}
+                    type="button"
+                    onClick={() => setActiveTab(t.key)}
+                    aria-pressed={active}
+                    className={`whitespace-nowrap border-b-2 px-3 py-2.5 text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-[rgb(var(--brand-line))] ${
+                      active
+                        ? "border-[rgb(var(--brand))] text-[rgb(var(--brand-text))]"
+                        : "border-transparent text-slate-500 hover:text-slate-800"
+                    }`}
+                  >
+                    {t.label}
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2 border-b border-stone-200 px-6 py-4">
+              {["Financial year 2026–27", "Filing type"].map((label) => (
+                <button
+                  key={label}
+                  type="button"
+                  className="flex h-9 items-center gap-1.5 whitespace-nowrap rounded-[var(--radius-control)] border border-stone-300 bg-white px-3 text-sm font-medium text-slate-600 transition-colors hover:bg-stone-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[rgb(var(--brand-line))]"
+                >
+                  {label}
+                  <ChevronDown size={12} />
+                </button>
               ))}
             </div>
-            <div className="filter-bar">
-              <div className="filter-pill">Financial year 2026–27 <ChevronDown /></div>
-              <div className="filter-pill">Filing type <ChevronDown /></div>
-            </div>
-            <div style={{ overflowX: "auto" }}>
-              <table>
-                <thead>
-                  <tr>
-                    <th>Period</th>
-                    <th>Filing type</th>
-                    <th>Due date</th>
-                    <th>Filed on</th>
-                    <th>Status</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filtered.map((f, i) => {
-                    const meta = statusMeta[f.status];
-                    return (
-                      <tr key={i}>
-                        <td>{f.period}</td>
-                        <td>{f.type}</td>
-                        <td>{f.dueDate}</td>
-                        <td>{f.filedOn}</td>
-                        <td>
-                          <span className={`badge ${meta.cls}`}>
-                            <span className="badge-dot" />
-                            {meta.label}
-                          </span>
-                        </td>
-                        <td>
-                          <a className="action-link" href="#">
-                            {f.status === "filed" ? "View filing" : "File now"}
-                          </a>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </div>
 
-          <div className="card card-pad">
-            <h2>Tax rate breakdown</h2>
-            <div className="card-sub">By product category, current month</div>
-            <div style={{ overflowX: "auto" }}>
-              <table className="rate-table">
-                <thead>
+            {filtered.length === 0 ? (
+              <div className="px-6 py-12 text-center">
+                <div className="text-lg font-semibold text-slate-900" style={serif}>
+                  No filings found
+                </div>
+                <div className="mt-1 text-sm text-slate-500">Try a different tab.</div>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[640px] text-left text-sm">
+                  <thead className="border-b border-stone-200 bg-[rgb(var(--tint-50))] text-slate-600">
+                    <tr>
+                      <th className="px-6 py-3 font-semibold">Period</th>
+                      <th className="px-6 py-3 font-semibold">Filing type</th>
+                      <th className="px-6 py-3 font-semibold">Due date</th>
+                      <th className="px-6 py-3 font-semibold">Filed on</th>
+                      <th className="px-6 py-3 font-semibold">Status</th>
+                      <th className="px-6 py-3 font-semibold">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-stone-100">
+                    {filtered.map((f, i) => {
+                      const meta = statusMeta[f.status];
+                      return (
+                        <tr key={i} className="transition-colors hover:bg-stone-50">
+                          <td className="whitespace-nowrap px-6 py-4 font-semibold text-slate-900">{f.period}</td>
+                          <td className="px-6 py-4 text-slate-700">{f.type}</td>
+                          <td className="whitespace-nowrap px-6 py-4 text-slate-700">{f.dueDate}</td>
+                          <td className="whitespace-nowrap px-6 py-4 text-slate-700">{f.filedOn}</td>
+                          <td className="px-6 py-4">
+                            <span
+                              className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-[var(--radius-control)] px-2.5 py-1 text-xs font-medium ring-1 ${meta.pill}`}
+                            >
+                              <span className={`h-1.5 w-1.5 rounded-full ${meta.dot}`} />
+                              {meta.label}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4">
+                            <a className={textLink} href="#">
+                              {f.status === "filed" ? "View filing" : "File now"}
+                            </a>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </section>
+
+          {/* Rate breakdown */}
+          <section className="relative overflow-hidden rounded-[var(--radius-card)] bg-white ring-1 ring-stone-200">
+            <GoldLine className="inset-x-10" />
+            <div className="border-b border-stone-200 px-6 py-5">
+              <h2 className="flex items-center gap-3 text-xl font-semibold text-slate-900" style={serif}>
+                <Table2 size={17} strokeWidth={1.6} className="text-[rgb(var(--brand-text))]" />
+                Tax rate breakdown
+              </h2>
+              <p className="mt-1 text-xs text-slate-500">By product category, current month</p>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[520px] text-sm">
+                <thead className="border-b border-stone-200 bg-[rgb(var(--tint-50))] text-slate-600">
                   <tr>
-                    <th>Category</th>
-                    <th>GST rate</th>
-                    <th>Taxable value</th>
-                    <th>Tax collected</th>
+                    <th className="px-6 py-3 text-left font-semibold">Category</th>
+                    <th className="px-6 py-3 text-right font-semibold">GST rate</th>
+                    <th className="px-6 py-3 text-right font-semibold">Taxable value</th>
+                    <th className="px-6 py-3 text-right font-semibold">Tax collected</th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="divide-y divide-stone-100">
                   {RATE_BREAKDOWN.map((r) => (
-                    <tr key={r.category}>
-                      <td>{r.category}</td>
-                      <td>{r.rate}</td>
-                      <td>{r.taxable}</td>
-                      <td>{r.tax}</td>
+                    <tr key={r.category} className="transition-colors hover:bg-stone-50">
+                      <td className="px-6 py-4 font-medium text-slate-900">{r.category}</td>
+                      <td className="px-6 py-4 text-right text-slate-700">{r.rate}</td>
+                      <td className="px-6 py-4 text-right text-slate-700">{r.taxable}</td>
+                      <td className="px-6 py-4 text-right text-lg font-semibold text-slate-900" style={serif}>
+                        {r.tax}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-          </div>
+          </section>
         </div>
 
-        <div>
-          <div className="card card-pad">
-            <h2>Compliance checklist</h2>
-            <div className="checklist-item">
-              <CheckIcon done />
-              <div>
-                <div className="check-text">GSTIN verified</div>
-                <div className="check-sub">Confirmed on 3 Jan 2026</div>
-              </div>
-            </div>
-            <div className="checklist-item">
-              <CheckIcon done />
-              <div>
-                <div className="check-text">PAN linked</div>
-                <div className="check-sub">Matches business registration</div>
-              </div>
-            </div>
-            <div className="checklist-item">
-              <CheckIcon done={false} />
-              <div>
-                <div className="check-text">GSTR-3B for Jun 2026 pending</div>
-                <div className="check-sub">Due 20 Jul 2026</div>
-              </div>
-            </div>
-          </div>
+        {/* Sidebar */}
+        <div className="space-y-6">
+          <Panel icon={ListChecks} title="Compliance checklist">
+            <ul className="divide-y divide-stone-100">
+              {CHECKLIST.map((item) => (
+                <li key={item.text} className="flex items-start gap-3 py-3 first:pt-0 last:pb-0">
+                  <span
+                    className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full ${
+                      item.done
+                        ? "bg-emerald-600 text-white"
+                        : "border border-stone-300 bg-stone-100 text-transparent"
+                    }`}
+                    aria-label={item.done ? "Completed" : "Pending"}
+                  >
+                    <Check size={12} strokeWidth={3} />
+                  </span>
+                  <div>
+                    <div className="text-sm font-medium text-slate-900">{item.text}</div>
+                    <div className="mt-0.5 text-xs text-slate-500">{item.sub}</div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </Panel>
 
-          <div className="card card-pad">
-            <h2>Need help?</h2>
-            <div className="sidebar-note">
-              Amazon collects TCS on your behalf as per GST rules. Make sure your GSTIN and HSN codes are up to date to avoid filing mismatches.
+          <Panel icon={LifeBuoy} title="Need help?">
+            <p className="text-sm leading-relaxed text-slate-600">
+              Amazon collects TCS on your behalf as per GST rules. Make sure your GSTIN and HSN codes are up to date to
+              avoid filing mismatches.
+            </p>
+            <div className="mt-3 flex flex-col gap-1.5">
+              <a href="#" className={textLink}>
+                Read GST &amp; TCS policy →
+              </a>
+              <a href="#" className={textLink}>
+                Contact tax support →
+              </a>
             </div>
-            <a className="policy-link" href="#">Read GST &amp; TCS policy →</a>
-            <br />
-            <a className="policy-link" href="#">Contact tax support →</a>
-          </div>
+          </Panel>
         </div>
       </div>
     </div>

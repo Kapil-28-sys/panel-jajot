@@ -1,309 +1,20 @@
 import React, { useState } from "react";
+import {
+  CheckCircle2,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  Download,
+  FileBarChart2,
+  FileText,
+  Gem,
+  Loader2,
+  Search,
+} from "lucide-react";
 
-const styles = `
-.order-reports-page {
-  --amz-blue: #007185;
-  --amz-blue-dark: #003553;
-  --amz-text: #0f1111;
-  --amz-text-secondary: #565959;
-  --amz-border: #d5d9d9;
-  --amz-bg: #eaeded;
-  --amz-card-bg: #ffffff;
-  --amz-green: #067d62;
-  --amz-green-bg: #f0fbf6;
-  --amz-orange: #e47911;
-  --amz-orange-bg: #fef4e8;
-  --amz-red: #b12704;
-  --amz-red-bg: #fdf1f0;
-  --amz-blue-bg: #eaf2fd;
+/* ---------- design tokens (same CSS variables as the Dashboard) ---------- */
 
-  font-family: "Amazon Ember", Arial, sans-serif;
-  background: var(--amz-bg);
-  color: var(--amz-text);
-  padding: 24px;
-  min-height: 100vh;
-}
-.order-reports-page * { box-sizing: border-box; }
-
-.order-reports-page .breadcrumb {
-  font-size: 13px;
-  color: var(--amz-text-secondary);
-  margin-bottom: 10px;
-}
-.order-reports-page .breadcrumb a { color: var(--amz-blue); text-decoration: none; }
-.order-reports-page .breadcrumb a:hover { text-decoration: underline; }
-
-.order-reports-page .page-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 16px;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-.order-reports-page .page-header h1 { font-size: 21px; font-weight: 700; margin: 0; }
-.order-reports-page .page-sub { font-size: 13px; color: var(--amz-text-secondary); margin-top: 4px; }
-
-.order-reports-page .btn {
-  border: 1px solid var(--amz-border);
-  background: #fff;
-  border-radius: 8px;
-  padding: 9px 16px;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  color: var(--amz-text);
-}
-.order-reports-page .btn:hover { background: #f7f8f8; }
-.order-reports-page .btn-primary {
-  background: linear-gradient(to bottom, #f7dfa5, #f0c14b);
-  border: 1px solid #a88734;
-  color: #111;
-}
-.order-reports-page .btn-primary:hover { background: linear-gradient(to bottom, #f5d78e, #eeb933); }
-.order-reports-page .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
-.order-reports-page .btn-small { padding: 6px 12px; font-size: 12px; }
-
-.order-reports-page .tabs {
-  display: flex;
-  gap: 4px;
-  padding: 0 16px;
-  border-bottom: 1px solid var(--amz-border);
-  background: #fff;
-  border-radius: 8px 8px 0 0;
-  overflow-x: auto;
-}
-.order-reports-page .tab {
-  padding: 14px 12px;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--amz-text-secondary);
-  cursor: pointer;
-  border-bottom: 3px solid transparent;
-  white-space: nowrap;
-}
-.order-reports-page .tab.active {
-  color: var(--amz-text);
-  border-bottom-color: var(--amz-orange);
-  font-weight: 700;
-}
-
-.order-reports-page .card {
-  background: var(--amz-card-bg);
-  border: 1px solid var(--amz-border);
-  border-top: none;
-  border-radius: 0 0 8px 8px;
-  padding: 20px;
-  margin-bottom: 16px;
-}
-.order-reports-page .card.standalone {
-  border-top: 1px solid var(--amz-border);
-  border-radius: 8px;
-}
-.order-reports-page .card h2 { font-size: 15px; font-weight: 700; margin: 0 0 14px 0; }
-
-/* generate form */
-.order-reports-page .form-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 14px;
-  align-items: end;
-}
-@media (max-width: 900px) {
-  .order-reports-page .form-grid { grid-template-columns: repeat(2, 1fr); }
-}
-.order-reports-page .field label {
-  display: block;
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--amz-text);
-  margin-bottom: 6px;
-}
-.order-reports-page select,
-.order-reports-page input[type="date"] {
-  width: 100%;
-  border: 1px solid var(--amz-border);
-  border-radius: 8px;
-  padding: 9px 10px;
-  font-size: 13px;
-  color: var(--amz-text);
-  background: #fff;
-  font-family: inherit;
-}
-.order-reports-page select:focus,
-.order-reports-page input[type="date"]:focus {
-  outline: none;
-  border-color: var(--amz-blue);
-  box-shadow: 0 0 0 1px var(--amz-blue);
-}
-.order-reports-page .report-type-desc {
-  font-size: 12px;
-  color: var(--amz-text-secondary);
-  margin-top: 10px;
-  background: #f7f8f8;
-  border-radius: 6px;
-  padding: 10px 12px;
-}
-
-/* filter bar for report list */
-.order-reports-page .filter-bar {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 14px;
-  flex-wrap: wrap;
-}
-.order-reports-page .search-box {
-  flex: 1;
-  min-width: 200px;
-  display: flex;
-  align-items: center;
-  border: 1px solid var(--amz-border);
-  border-radius: 8px;
-  padding: 8px 10px;
-  background: #fff;
-  gap: 8px;
-}
-.order-reports-page .search-box input { border: none; outline: none; font-size: 13px; flex: 1; }
-.order-reports-page .search-box svg { color: #8b9195; flex-shrink: 0; }
-.order-reports-page .filter-pill {
-  border: 1px solid var(--amz-border);
-  border-radius: 8px;
-  padding: 8px 12px;
-  font-size: 13px;
-  background: #fff;
-  cursor: pointer;
-  white-space: nowrap;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-/* table */
-.order-reports-page table { width: 100%; border-collapse: collapse; font-size: 13px; }
-.order-reports-page thead th {
-  text-align: left;
-  padding: 10px 14px;
-  background: #f7f8f8;
-  color: var(--amz-text-secondary);
-  font-weight: 700;
-  font-size: 12px;
-  border-bottom: 1px solid var(--amz-border);
-  white-space: nowrap;
-}
-.order-reports-page tbody td {
-  padding: 12px 14px;
-  border-bottom: 1px solid #f0f2f2;
-  color: var(--amz-text);
-  vertical-align: middle;
-}
-.order-reports-page tbody tr:hover { background: #fafafa; }
-.order-reports-page tbody tr:last-child td { border-bottom: none; }
-
-.order-reports-page .report-name { font-weight: 500; color: var(--amz-text); }
-.order-reports-page .report-id { font-size: 11px; color: var(--amz-text-secondary); margin-top: 2px; }
-
-.order-reports-page .badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 3px 10px;
-  border-radius: 12px;
-  font-size: 12px;
-  font-weight: 600;
-  white-space: nowrap;
-}
-.order-reports-page .badge-dot { width: 6px; height: 6px; border-radius: 50%; }
-.order-reports-page .badge-ready { background: var(--amz-green-bg); color: var(--amz-green); }
-.order-reports-page .badge-ready .badge-dot { background: var(--amz-green); }
-.order-reports-page .badge-processing { background: var(--amz-orange-bg); color: #8a5a00; }
-.order-reports-page .badge-processing .badge-dot { background: var(--amz-orange); animation: pulse 1.4s infinite; }
-.order-reports-page .badge-failed { background: var(--amz-red-bg); color: var(--amz-red); }
-.order-reports-page .badge-failed .badge-dot { background: var(--amz-red); }
-.order-reports-page .badge-scheduled { background: var(--amz-blue-bg); color: #0967d2; }
-.order-reports-page .badge-scheduled .badge-dot { background: #0967d2; }
-
-@keyframes pulse {
-  0% { opacity: 1; }
-  50% { opacity: 0.3; }
-  100% { opacity: 1; }
-}
-
-.order-reports-page .action-link {
-  color: var(--amz-blue);
-  text-decoration: none;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-}
-.order-reports-page .action-link:hover { text-decoration: underline; }
-.order-reports-page .action-link.disabled { color: #8b9195; cursor: not-allowed; pointer-events: none; }
-
-.order-reports-page .empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  padding: 56px 20px;
-  color: var(--amz-text-secondary);
-}
-.order-reports-page .empty-state .empty-icon { width: 64px; height: 64px; margin-bottom: 14px; opacity: 0.55; }
-.order-reports-page .empty-state .empty-title { font-size: 14px; font-weight: 700; color: var(--amz-text); margin-bottom: 6px; }
-.order-reports-page .empty-state .empty-sub { font-size: 13px; max-width: 300px; }
-
-.order-reports-page .table-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 2px 0 2px;
-  font-size: 12px;
-  color: var(--amz-text-secondary);
-  flex-wrap: wrap;
-  gap: 10px;
-}
-.order-reports-page .pagination { display: flex; gap: 4px; align-items: center; }
-.order-reports-page .page-btn {
-  border: 1px solid var(--amz-border);
-  background: #fff;
-  border-radius: 6px;
-  min-width: 28px;
-  height: 28px;
-  font-size: 12px;
-  cursor: pointer;
-  color: var(--amz-text);
-}
-.order-reports-page .page-btn.active { background: var(--amz-blue-dark); color: #fff; border-color: var(--amz-blue-dark); }
-.order-reports-page .page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-`;
-
-const SearchIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-    <circle cx="7" cy="7" r="5" stroke="currentColor" strokeWidth="1.5" />
-    <path d="M11 11L14.5 14.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-  </svg>
-);
-
-const ChevronDown = () => (
-  <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-    <path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
-
-const DownloadIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-    <path d="M7 1.5v7.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-    <path d="M3.5 6L7 9.5L10.5 6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
-    <path d="M2 12h10" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-  </svg>
-);
-
-const EmptyIcon = () => (
-  <svg className="empty-icon" viewBox="0 0 64 64" fill="none">
-    <rect x="12" y="8" width="40" height="48" rx="3" stroke="#B7BDC0" strokeWidth="2" />
-    <path d="M20 20h24M20 28h24M20 36h16" stroke="#B7BDC0" strokeWidth="2" strokeLinecap="round" />
-  </svg>
-);
+const serif = { fontFamily: "var(--font-display)" };
 
 const TABS = ["All order reports", "Scheduled reports", "Custom reports"];
 
@@ -384,11 +95,43 @@ const INITIAL_REPORTS = [
 ];
 
 const statusMeta = {
-  ready: { label: "Ready", cls: "badge-ready" },
-  processing: { label: "Processing", cls: "badge-processing" },
-  failed: { label: "Failed", cls: "badge-failed" },
-  scheduled: { label: "Scheduled", cls: "badge-scheduled" },
+  ready: { label: "Ready", pill: "bg-emerald-50 text-emerald-800 ring-emerald-200", dot: "bg-emerald-500" },
+  processing: { label: "Processing", pill: "bg-amber-50 text-amber-800 ring-amber-200", dot: "bg-amber-500 animate-pulse" },
+  failed: { label: "Failed", pill: "bg-rose-50 text-rose-800 ring-rose-200", dot: "bg-rose-500" },
+  scheduled: { label: "Scheduled", pill: "bg-sky-50 text-sky-800 ring-sky-200", dot: "bg-sky-500" },
 };
+
+const linkClass =
+  "text-sm font-medium text-[rgb(var(--brand-text))] hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-[rgb(var(--brand-line))]";
+
+const fieldClass =
+  "w-full rounded-[var(--radius-control)] border border-stone-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus-visible:ring-2 focus-visible:ring-[rgb(var(--brand-line))]";
+
+/* ---------- building blocks (same look as Dashboard) ---------- */
+
+function GoldLine({ className = "inset-x-10" }) {
+  return (
+    <span
+      className={`pointer-events-none absolute top-0 h-px bg-gradient-to-r from-transparent via-[rgb(var(--brand-line))] to-transparent ${className}`}
+    />
+  );
+}
+
+function GlanceStat({ icon: Icon, value, label }) {
+  return (
+    <div className="flex items-center gap-3 px-5 first:pl-0 last:pr-0">
+      <Icon size={18} strokeWidth={1.5} className="text-[rgb(var(--brand-text))]" />
+      <div>
+        <p className="text-2xl font-semibold leading-none text-slate-900" style={serif}>
+          {value}
+        </p>
+        <p className="mt-1 text-xs text-slate-500">{label}</p>
+      </div>
+    </div>
+  );
+}
+
+/* ---------- page ---------- */
 
 export default function OrderReports() {
   const [activeTab, setActiveTab] = useState(0);
@@ -425,125 +168,217 @@ export default function OrderReports() {
       r.id.toLowerCase().includes(query.toLowerCase())
   );
 
+  const readyCount = reports.filter((r) => r.status === "ready").length;
+  const processingCount = reports.filter((r) => r.status === "processing").length;
+
   return (
-    <div className="order-reports-page">
-      <style>{styles}</style>
+    <div className="space-y-8">
+      {/* Breadcrumb */}
+      <nav aria-label="Breadcrumb" className="text-xs text-slate-500">
+        <a href="#" className="text-[rgb(var(--brand-text))] hover:underline">
+          Orders
+        </a>
+        <span className="mx-2">›</span>
+        <span>Order Reports</span>
+      </nav>
 
-      <div className="breadcrumb">
-        <a href="#">Orders</a> &nbsp;›&nbsp; Order Reports
-      </div>
+      {/* Hero */}
+      <section className="relative overflow-hidden rounded-[var(--radius-card)] bg-gradient-to-br from-[rgb(var(--hero-a))] via-[rgb(var(--hero-b))] to-[rgb(var(--hero-c))] p-7 ring-1 ring-[rgb(var(--brand-line)/0.4)] sm:p-10">
+        <GoldLine className="inset-x-16" />
 
-      <div className="page-header">
-        <div>
-          <h1>Order Reports</h1>
-          <div className="page-sub">Generate and download reports about your orders, returns, and fulfilment.</div>
-        </div>
-        <button className="btn">Manage scheduled reports</button>
-      </div>
+        <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
+          <div className="max-w-2xl">
+            <p className="inline-flex items-center gap-2 text-sm font-medium text-[rgb(var(--brand-dark))]">
+              <Gem size={14} strokeWidth={1.6} />
+              Reporting
+            </p>
+            <h1 className="mt-3 text-4xl font-semibold leading-[1.08] tracking-tight text-slate-900 sm:text-5xl" style={serif}>
+              Order reports
+            </h1>
+            <p className="mt-4 max-w-xl text-sm leading-relaxed text-slate-600">
+              Generate and download reports about your orders, returns, and fulfilment.
+            </p>
+          </div>
 
-      {/* GENERATE REPORT CARD */}
-      <div className="card standalone">
-        <h2>Request a new report</h2>
-        <div className="form-grid">
-          <div className="field">
-            <label htmlFor="reportType">Report type</label>
-            <select id="reportType" value={reportType} onChange={(e) => setReportType(e.target.value)}>
-              {REPORT_TYPES.map((t) => (
-                <option key={t.value} value={t.value}>{t.label}</option>
-              ))}
-            </select>
-          </div>
-          <div className="field">
-            <label htmlFor="startDate">Start date</label>
-            <input id="startDate" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
-          </div>
-          <div className="field">
-            <label htmlFor="endDate">End date</label>
-            <input id="endDate" type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
-          </div>
-          <div className="field">
-            <button className="btn btn-primary" style={{ width: "100%" }} onClick={handleGenerate}>
-              Request report
+          <div className="flex flex-col gap-5 lg:items-end">
+            <div className="flex divide-x divide-[rgb(var(--brand-line)/0.4)]">
+              <GlanceStat icon={FileBarChart2} value={reports.length} label="total reports" />
+              <GlanceStat icon={CheckCircle2} value={readyCount} label="ready to download" />
+              <GlanceStat icon={Loader2} value={processingCount} label="processing" />
+            </div>
+
+            <button
+              type="button"
+              className="rounded-[var(--radius-control)] border border-[rgb(var(--brand-line)/0.5)] bg-white/80 px-3.5 py-2 text-sm font-medium text-slate-900 transition-colors hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-[rgb(var(--brand-line))]"
+            >
+              Manage scheduled reports
             </button>
           </div>
         </div>
-        {selectedType && <div className="report-type-desc">{selectedType.desc}</div>}
-      </div>
+      </section>
 
-      {/* REPORTS LIST */}
-      <div className="tabs">
-        {TABS.map((t, i) => (
-          <div key={t} className={`tab ${activeTab === i ? "active" : ""}`} onClick={() => setActiveTab(i)}>
-            {t}
+      {/* Generate report */}
+      <section className="relative rounded-[var(--radius-card)] bg-white p-6 ring-1 ring-stone-200 sm:p-7">
+        <GoldLine className="inset-x-10" />
+        <h2 className="flex items-center gap-3 text-xl font-semibold text-slate-900" style={serif}>
+          <FileText size={17} strokeWidth={1.6} className="text-[rgb(var(--brand-text))]" />
+          Request a new report
+        </h2>
+
+        <div className="mt-6 grid items-end gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <div>
+            <label htmlFor="reportType" className="mb-1.5 block text-sm font-medium text-slate-700">
+              Report type
+            </label>
+            <select id="reportType" value={reportType} onChange={(e) => setReportType(e.target.value)} className={fieldClass}>
+              {REPORT_TYPES.map((t) => (
+                <option key={t.value} value={t.value}>
+                  {t.label}
+                </option>
+              ))}
+            </select>
           </div>
-        ))}
-      </div>
-      <div className="card">
-        <div className="filter-bar">
-          <div className="search-box">
-            <SearchIcon />
+          <div>
+            <label htmlFor="startDate" className="mb-1.5 block text-sm font-medium text-slate-700">
+              Start date
+            </label>
+            <input id="startDate" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className={fieldClass} />
+          </div>
+          <div>
+            <label htmlFor="endDate" className="mb-1.5 block text-sm font-medium text-slate-700">
+              End date
+            </label>
+            <input id="endDate" type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className={fieldClass} />
+          </div>
+          <button
+            type="button"
+            onClick={handleGenerate}
+            className="w-full rounded-[var(--radius-control)] bg-gradient-to-br from-[rgb(var(--brand))] to-[rgb(var(--brand-dark))] px-4 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[rgb(var(--brand-line))]"
+          >
+            Request report
+          </button>
+        </div>
+
+        {selectedType && (
+          <p className="mt-4 rounded-[var(--radius-control)] bg-[rgb(var(--tint-50))] px-4 py-3 text-sm text-slate-600">
+            {selectedType.desc}
+          </p>
+        )}
+      </section>
+
+      {/* Reports list */}
+      <section className="relative overflow-hidden rounded-[var(--radius-card)] bg-white ring-1 ring-stone-200">
+        <GoldLine className="inset-x-10" />
+
+        {/* tabs */}
+        <div className="flex gap-1 overflow-x-auto border-b border-stone-200 px-4 pt-3">
+          {TABS.map((t, i) => {
+            const active = activeTab === i;
+            return (
+              <button
+                key={t}
+                type="button"
+                onClick={() => setActiveTab(i)}
+                aria-pressed={active}
+                className={`whitespace-nowrap border-b-2 px-3 py-2.5 text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-[rgb(var(--brand-line))] ${
+                  active
+                    ? "border-[rgb(var(--brand))] text-[rgb(var(--brand-text))]"
+                    : "border-transparent text-slate-500 hover:text-slate-800"
+                }`}
+              >
+                {t}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* toolbar */}
+        <div className="flex flex-wrap items-center gap-2 border-b border-stone-200 px-6 py-4">
+          <label className="relative block min-w-[200px] flex-1 sm:max-w-xs">
+            <span className="sr-only">Search reports</span>
+            <Search size={16} className="absolute left-3 top-2.5 text-slate-400" aria-hidden="true" />
             <input
               type="text"
               placeholder="Search by report name or ID"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
+              className="h-9 w-full rounded-[var(--radius-control)] border border-stone-300 bg-white pl-9 pr-3 text-sm text-slate-800 outline-none placeholder:text-slate-400 focus-visible:ring-2 focus-visible:ring-[rgb(var(--brand-line))]"
             />
-          </div>
-          <div className="filter-pill">Last 90 days <ChevronDown /></div>
-          <div className="filter-pill">Format <ChevronDown /></div>
-          <div className="filter-pill">Status <ChevronDown /></div>
+          </label>
+          {["Last 90 days", "Format", "Status"].map((label) => (
+            <button
+              key={label}
+              type="button"
+              className="flex h-9 items-center gap-1.5 whitespace-nowrap rounded-[var(--radius-control)] border border-stone-300 bg-white px-3 text-sm font-medium text-slate-600 transition-colors hover:bg-stone-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[rgb(var(--brand-line))]"
+            >
+              {label}
+              <ChevronDown size={12} />
+            </button>
+          ))}
         </div>
 
         {filtered.length === 0 ? (
-          <div className="empty-state">
-            <EmptyIcon />
-            <div className="empty-title">No reports found</div>
-            <div className="empty-sub">Request a new report above, or adjust your search and filters.</div>
+          <div className="flex flex-col items-center justify-center px-6 py-14 text-center">
+            <FileText size={40} strokeWidth={1.2} className="mb-3 text-slate-300" />
+            <div className="text-lg font-semibold text-slate-900" style={serif}>
+              No reports found
+            </div>
+            <div className="mt-1 max-w-xs text-sm text-slate-500">
+              Request a new report above, or adjust your search and filters.
+            </div>
           </div>
         ) : (
-          <div style={{ overflowX: "auto" }}>
-            <table>
-              <thead>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[760px] text-left text-sm">
+              <thead className="border-b border-stone-200 bg-[rgb(var(--tint-50))] text-slate-600">
                 <tr>
-                  <th>Report</th>
-                  <th>Date range</th>
-                  <th>Requested</th>
-                  <th>Format</th>
-                  <th>Size</th>
-                  <th>Status</th>
-                  <th>Action</th>
+                  <th className="px-6 py-3 font-semibold">Report</th>
+                  <th className="px-6 py-3 font-semibold">Date range</th>
+                  <th className="px-6 py-3 font-semibold">Requested</th>
+                  <th className="px-6 py-3 font-semibold">Format</th>
+                  <th className="px-6 py-3 font-semibold">Size</th>
+                  <th className="px-6 py-3 font-semibold">Status</th>
+                  <th className="px-6 py-3 font-semibold">Action</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-stone-100">
                 {filtered.map((r) => {
                   const meta = statusMeta[r.status];
                   return (
-                    <tr key={r.id}>
-                      <td>
-                        <div className="report-name">{r.name}</div>
-                        <div className="report-id">{r.id}</div>
+                    <tr key={r.id} className="transition-colors hover:bg-stone-50">
+                      <td className="px-6 py-4">
+                        <div className="font-semibold text-slate-900">{r.name}</div>
+                        <div className="mt-0.5 text-xs text-slate-500">{r.id}</div>
                       </td>
-                      <td>{r.range}</td>
-                      <td>{r.requested}</td>
-                      <td>{r.format}</td>
-                      <td>{r.size}</td>
-                      <td>
-                        <span className={`badge ${meta.cls}`}>
-                          <span className="badge-dot" />
+                      <td className="whitespace-nowrap px-6 py-4 text-slate-700">{r.range}</td>
+                      <td className="whitespace-nowrap px-6 py-4 text-slate-700">{r.requested}</td>
+                      <td className="px-6 py-4 text-slate-700">{r.format}</td>
+                      <td className="px-6 py-4 text-slate-700">{r.size}</td>
+                      <td className="px-6 py-4">
+                        <span
+                          className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-[var(--radius-control)] px-2.5 py-1 text-xs font-medium ring-1 ${meta.pill}`}
+                        >
+                          <span className={`h-1.5 w-1.5 rounded-full ${meta.dot}`} />
                           {meta.label}
                         </span>
                       </td>
-                      <td>
+                      <td className="px-6 py-4">
                         {r.status === "ready" ? (
-                          <a className="action-link" href="#" style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                            <DownloadIcon /> Download
+                          <a className={`inline-flex items-center gap-1.5 ${linkClass}`} href="#">
+                            <Download size={14} strokeWidth={1.8} /> Download
                           </a>
                         ) : r.status === "failed" ? (
-                          <a className="action-link" href="#">Retry</a>
+                          <a className={linkClass} href="#">
+                            Retry
+                          </a>
                         ) : r.status === "scheduled" ? (
-                          <a className="action-link" href="#">Edit schedule</a>
+                          <a className={linkClass} href="#">
+                            Edit schedule
+                          </a>
                         ) : (
-                          <span className="action-link disabled">Download</span>
+                          <span className="pointer-events-none cursor-not-allowed text-sm font-medium text-slate-400">
+                            Download
+                          </span>
                         )}
                       </td>
                     </tr>
@@ -555,16 +390,28 @@ export default function OrderReports() {
         )}
 
         {filtered.length > 0 && (
-          <div className="table-footer">
-            <span>1–{filtered.length} of {filtered.length} reports</span>
-            <div className="pagination">
-              <button className="page-btn" disabled>‹</button>
-              <button className="page-btn active">1</button>
-              <button className="page-btn" disabled>›</button>
+          <div className="flex flex-wrap items-center justify-between gap-2 border-t border-stone-200 px-6 py-3">
+            <span className="text-xs text-slate-500">
+              1–{filtered.length} of {filtered.length} reports
+            </span>
+            <div className="flex items-center gap-1 text-sm">
+              <button type="button" disabled aria-label="Previous page" className="rounded-[var(--radius-control)] p-1 text-slate-300">
+                <ChevronLeft size={16} />
+              </button>
+              <button
+                type="button"
+                aria-current="page"
+                className="rounded-[var(--radius-control)] bg-gradient-to-br from-[rgb(var(--brand))] to-[rgb(var(--brand-dark))] px-2.5 py-1 font-medium text-white"
+              >
+                1
+              </button>
+              <button type="button" disabled aria-label="Next page" className="rounded-[var(--radius-control)] p-1 text-slate-300">
+                <ChevronRight size={16} />
+              </button>
             </div>
           </div>
         )}
-      </div>
+      </section>
     </div>
   );
 }

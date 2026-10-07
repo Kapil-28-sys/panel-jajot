@@ -1,10 +1,7 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 
 import Dashboard from "../pages/dashboard/Dashboard";
-<<<<<<< HEAD
-=======
 import VendorAppearance from "../pages/settings/VendorAppearance";
->>>>>>> b77933a (scss used in this)
 
 import Products from "../pages/products/Products";
 import Workspace from "../pages/products/workspace";
@@ -39,12 +36,9 @@ export default function VendorRoutes() {
       {/* Default Route */}
       <Route index element={<Navigate to="dashboard" replace />} />
 
-<<<<<<< HEAD
-=======
       {/* Each vendor customises their own panel */}
       <Route path="settings" element={<VendorAppearance />} />
 
->>>>>>> b77933a (scss used in this)
       {/* Dashboard */}
       <Route path="dashboard" element={<Dashboard />} />
 
@@ -56,7 +50,6 @@ export default function VendorRoutes() {
       <Route path="attribute" element={<Attribute />} />
       <Route path="Reviews" element={<Reviews />} />
       <Route path="ResearchProduct" element={<ResearchProduct />} />
-
 
       <Route path="products/*" element={<VendorProducts />} />
 

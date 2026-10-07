@@ -1,4 +1,5 @@
 // Products.jsx
+// UI restyled to match the vendor Dashboard design tokens. Logic/API unchanged.
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
@@ -6,11 +7,10 @@ import {
   PackagePlus, Search, SlidersHorizontal,
   Pencil, Trash2, X,
   CheckCircle, Archive as ArchiveIcon, Copy,
-  Boxes, Save, Power, PowerOff, RefreshCw,
+  Boxes, Save, Power, PowerOff, RefreshCw, Gem, ShoppingBag,
 } from "lucide-react";
 import { inr, vendorName, vendors } from "../../data/marketplaceData";
 import DataPager from "../../components/common/DataPager";
-import MetricCard from "../../components/common/MetricCard";
 
 // ── Centralized products API (all 21 endpoints) ──
 // productsApi.js
@@ -94,15 +94,10 @@ const productsApi = {
   // ── FIXED — bulk-update / bulk-delete ──
   // The backend was returning 400 "At least one product id is required"
   // even though the frontend was sending a valid, non-empty `productIds`
-  // array. That means the handler on /products/bulk-update (and likely
-  // /products/bulk-delete) is not reading `req.body.productIds` the way
-  // this client originally sent it. Since the backend source isn't
-  // accessible from here, these two calls now try the original shape
-  // first, then automatically fall back through the next most common
-  // shapes — but ONLY when the server keeps complaining specifically
-  // about a missing product id (400 + "product id" in the message).
-  // Any other error (auth, 500, etc.) surfaces immediately instead of
-  // being masked by retries.
+  // array. These two calls try the original shape first, then fall back
+  // through the next most common shapes — but ONLY when the server keeps
+  // complaining specifically about a missing product id (400 + "product id"
+  // in the message). Any other error surfaces immediately.
   bulkUpdate: async (productIds, update) => {
     const attempts = [
       { productIds, update },           // shape A (nested) — original
@@ -159,6 +154,100 @@ const productsApi = {
 
 import axios from "axios";
 
+/* ════════════════════════════════════════════════════════════════
+   DESIGN LAYER — same tokens as the vendor Dashboard
+   ════════════════════════════════════════════════════════════════ */
+
+const serif = { fontFamily: "var(--font-display)" };
+
+const GRAD      = "bg-gradient-to-br from-[rgb(var(--brand))] to-[rgb(var(--brand-dark))]";
+const BRAND_TXT = "text-[rgb(var(--brand-text))]";
+const TINT      = "bg-[rgb(var(--tint-100))]";
+const LINE_BRD  = "border-[rgb(var(--brand-line)/0.6)]";
+const FOCUS_BRD = "focus:border-[rgb(var(--brand))] focus:ring-2 focus:ring-[rgb(var(--brand)/0.18)]";
+const ACCENT    = "accent-[rgb(var(--brand))]";
+const spinner   = "inline-block h-4 w-4 animate-spin rounded-full border-2 border-stone-300 border-t-[rgb(var(--brand))]";
+
+const fieldBase =
+  "rounded-[var(--radius-control)] border border-stone-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 " +
+  `outline-none transition-colors placeholder:text-slate-400 hover:border-stone-300 ${FOCUS_BRD}`;
+
+const btnPrimary =
+  `inline-flex items-center justify-center gap-2 rounded-[var(--radius-control)] ${GRAD} px-4 py-2.5 text-sm font-semibold text-white ` +
+  "transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50 " +
+  "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[rgb(var(--brand-line))]";
+const btnGhost =
+  "inline-flex items-center justify-center gap-2 rounded-[var(--radius-control)] border border-stone-200 bg-white " +
+  "px-4 py-2.5 text-sm font-semibold text-slate-700 transition-colors hover:bg-stone-50 disabled:opacity-50";
+const btnDanger =
+  "inline-flex items-center gap-2 rounded-[var(--radius-control)] bg-rose-700 px-4 py-2 text-sm font-semibold text-white " +
+  "transition-colors hover:bg-rose-800 disabled:opacity-50";
+
+// Round icon buttons in the Actions column — hover colour passed in per action
+const iconBtn =
+  "flex h-8 w-8 items-center justify-center rounded-[var(--radius-control)] border border-stone-200 bg-white text-slate-500 " +
+  "transition-colors disabled:cursor-not-allowed disabled:opacity-50 ";
+const hoverBrand = "hover:border-[rgb(var(--brand-line))] hover:text-[rgb(var(--brand-text))]";
+const hoverGreen = "hover:border-emerald-400 hover:text-emerald-700";
+const hoverRose  = "hover:border-rose-400 hover:text-rose-700";
+const hoverBlue  = "hover:border-sky-400 hover:text-sky-700";
+
+const palettes = [
+  { front: "from-[rgb(var(--a1-f1))] via-[rgb(var(--a1-f2))] to-[rgb(var(--a1-f3))]", chip: "from-[rgb(var(--a1))] to-[rgb(var(--a1-dark))]" },
+  { front: "from-[rgb(var(--a2-f1))] via-[rgb(var(--a2-f2))] to-[rgb(var(--a2-f3))]", chip: "from-[rgb(var(--a2))] to-[rgb(var(--a2-dark))]" },
+  { front: "from-[rgb(var(--a3-f1))] via-[rgb(var(--a3-f2))] to-[rgb(var(--a3-f3))]", chip: "from-[rgb(var(--a3))] to-[rgb(var(--a3-dark))]" },
+];
+
+function GoldLine({ className = "inset-x-10" }) {
+  return (
+    <span
+      className={`pointer-events-none absolute top-0 h-px bg-gradient-to-r from-transparent via-[rgb(var(--brand-line))] to-transparent ${className}`}
+    />
+  );
+}
+
+function Panel({ children, className = "" }) {
+  return (
+    <div className={`relative rounded-[var(--radius-card)] bg-white ring-1 ring-stone-200 ${className}`}>
+      <GoldLine />
+      {children}
+    </div>
+  );
+}
+
+// Same look as the dashboard's metric card front face (no flip needed here)
+function StatCard({ label, value, helper, icon: Icon, palette }) {
+  return (
+    <div className={`relative flex h-36 flex-col overflow-hidden rounded-[var(--radius-card)] bg-gradient-to-br ${palette.front} p-5 text-slate-900 ring-1 ring-[rgb(var(--brand-line)/0.35)]`}>
+      <GoldLine />
+      <span className="flex items-start justify-between">
+        <span className="text-sm font-medium text-slate-600">{label}</span>
+        <span className={`flex h-9 w-9 items-center justify-center rounded-[var(--radius-control)] bg-gradient-to-br ${palette.chip} text-white`}>
+          <Icon size={18} strokeWidth={1.6} />
+        </span>
+      </span>
+      <span className="mt-auto block text-4xl font-semibold tracking-tight" style={serif}>{value}</span>
+      <span className="mt-0.5 block text-xs text-slate-600">{helper}</span>
+    </div>
+  );
+}
+
+function ModalShell({ onClose, children, maxW = "max-w-sm" }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm" onClick={onClose}>
+      <div
+        className={`relative w-full ${maxW} rounded-[var(--radius-card)] bg-white shadow-pop ring-1 ring-[rgb(var(--brand-line)/0.4)]`}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <GoldLine />
+        {children}
+      </div>
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════════ */
+
 const STATUS_OPTIONS = ["All", "Active", "Draft", "Suppressed", "Pending"];
 const normStatus = (s) => (s ?? "").toString().trim().toLowerCase();
 const idStr = (val) => {
@@ -168,9 +257,9 @@ const idStr = (val) => {
 };
 
 const stockClass = (p) => {
-  if (normStatus(p.status) === "suppressed") return "bg-red-50 text-red-700 ring-red-200";
-  if (p.stock < 15)             return "bg-amber-50 text-amber-700 ring-amber-200";
-  return "bg-emerald-50 text-emerald-700 ring-emerald-200";
+  if (normStatus(p.status) === "suppressed") return "bg-rose-50 text-rose-800 ring-rose-200";
+  if (p.stock < 15)             return "bg-amber-50 text-amber-800 ring-amber-200";
+  return "bg-emerald-50 text-emerald-800 ring-emerald-200";
 };
 
 function deriveProductMetrics(p) {
@@ -217,22 +306,10 @@ function matchesInventoryLevel(stock, level) {
 // ── inventory merge helper ──
 // GET /products (and /products/vendor/:vendorId) don't populate each
 // variant's nested `inventory` sub-document the way GET /products/:id
-// does. That's why the table showed stock as 0 right after a page
-// refresh even though the single-product view/edit modal showed the
-// correct number (it uses getById, which DOES populate inventory).
-//
-// FIXED — /products/inventory/vendor/:vendorId returns rows where
-// `productId` and `variantId` are POPULATED OBJECTS
-// (e.g. productId: { _id, productName }, variantId: { _id, variantName, ... }),
-// not plain id strings. The previous version compared them with
-// String(r.productId) === String(pid), which stringifies an object to
-// "[object Object]" and can never match a real id — so the merge always
-// silently found nothing, and stock kept showing stale/0 values even
-// though the sync call itself succeeded with no error. This now uses
-// idStr() (already used elsewhere in this file) so it correctly unwraps
-// either a populated object or a raw string on both sides of the
-// comparison. Also carries over maxQty / isActive from the same
-// response, since the PUT endpoint returns those on the same row.
+// does. /products/inventory/vendor/:vendorId returns rows where
+// `productId` and `variantId` are POPULATED OBJECTS, so ids are unwrapped
+// with idStr() on both sides of the comparison. Also carries over
+// maxQty / isActive from the same response.
 function mergeInventoryRows(list, rows) {
   return list.map((p) => {
     const pid = p._id ?? p.id;
@@ -260,66 +337,48 @@ function mergeInventoryRows(list, rows) {
 
 function DeleteModal({ product, onCancel, onConfirm, deleting }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
-      onClick={onCancel}>
-      <div className="w-full max-w-sm rounded-card bg-white p-6 shadow-pop"
-        onClick={(e) => e.stopPropagation()}>
-        <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
-          <Trash2 size={22} className="text-red-600" />
+    <ModalShell onClose={onCancel}>
+      <div className="p-6">
+        <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-rose-100">
+          <Trash2 size={22} strokeWidth={1.6} className="text-rose-700" />
         </div>
-        <h3 className="text-base font-bold text-ink-950">Delete product?</h3>
+        <h3 className="text-xl font-semibold text-slate-900" style={serif}>Delete product?</h3>
         <p className="mt-1 text-sm text-slate-500">
-          <strong className="text-ink-800">{product?.productName ?? product?.name}</strong> will be
+          <strong className="text-slate-800">{product?.productName ?? product?.name}</strong> will be
           permanently removed. This cannot be undone.
         </p>
         <div className="mt-5 flex justify-end gap-3">
-          <button
-            onClick={onCancel}
-            className="rounded-control border border-slate-300 px-4 py-2 text-sm font-medium hover:bg-slate-50">
-            Cancel
-          </button>
-          <button
-            onClick={onConfirm}
-            disabled={deleting}
-            className="inline-flex items-center gap-2 rounded-control bg-red-600 px-4 py-2 text-sm font-bold text-white hover:bg-red-700 disabled:opacity-50">
+          <button onClick={onCancel} className={btnGhost}>Cancel</button>
+          <button onClick={onConfirm} disabled={deleting} className={btnDanger}>
             {deleting && <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" />}
             {deleting ? "Deleting…" : "Yes, delete"}
           </button>
         </div>
       </div>
-    </div>
+    </ModalShell>
   );
 }
 
 function BulkDeleteModal({ count, onCancel, onConfirm, deleting }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
-      onClick={onCancel}>
-      <div className="w-full max-w-sm rounded-card bg-white p-6 shadow-pop"
-        onClick={(e) => e.stopPropagation()}>
-        <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
-          <Trash2 size={22} className="text-red-600" />
+    <ModalShell onClose={onCancel}>
+      <div className="p-6">
+        <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-rose-100">
+          <Trash2 size={22} strokeWidth={1.6} className="text-rose-700" />
         </div>
-        <h3 className="text-base font-bold text-ink-950">Delete {count} products?</h3>
+        <h3 className="text-xl font-semibold text-slate-900" style={serif}>Delete {count} products?</h3>
         <p className="mt-1 text-sm text-slate-500">
-          This will permanently remove <strong className="text-ink-800">{count}</strong> selected products. This cannot be undone.
+          This will permanently remove <strong className="text-slate-800">{count}</strong> selected products. This cannot be undone.
         </p>
         <div className="mt-5 flex justify-end gap-3">
-          <button
-            onClick={onCancel}
-            className="rounded-control border border-slate-300 px-4 py-2 text-sm font-medium hover:bg-slate-50">
-            Cancel
-          </button>
-          <button
-            onClick={onConfirm}
-            disabled={deleting}
-            className="inline-flex items-center gap-2 rounded-control bg-red-600 px-4 py-2 text-sm font-bold text-white hover:bg-red-700 disabled:opacity-50">
+          <button onClick={onCancel} className={btnGhost}>Cancel</button>
+          <button onClick={onConfirm} disabled={deleting} className={btnDanger}>
             {deleting && <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" />}
             {deleting ? "Deleting…" : `Yes, delete ${count}`}
           </button>
         </div>
       </div>
-    </div>
+    </ModalShell>
   );
 }
 
@@ -332,8 +391,8 @@ function Field({ label, value }) {
   if (isEmpty(value)) return null;
   return (
     <div>
-      <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">{label}</p>
-      <p className="mt-0.5 text-sm text-ink-900 break-words">
+      <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">{label}</p>
+      <p className="mt-0.5 break-words text-sm text-slate-900">
         {typeof value === "boolean" ? (value ? "Yes" : "No") : String(value)}
       </p>
     </div>
@@ -345,18 +404,21 @@ function BulletList({ label, items }) {
   const list = Array.isArray(items) ? items : [items];
   return (
     <div className="sm:col-span-2">
-      <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">{label}</p>
-      <ul className="mt-1 list-disc space-y-1 pl-4 text-sm text-ink-900">
+      <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">{label}</p>
+      <ul className="mt-1 list-disc space-y-1 pl-4 text-sm text-slate-900">
         {list.map((it, i) => <li key={i}>{it}</li>)}
       </ul>
     </div>
   );
 }
 
+const sectionBox = "rounded-[var(--radius-card)] border border-stone-200 bg-stone-50/60 p-4";
+const sectionHead = `mb-3 text-sm font-semibold ${BRAND_TXT}`;
+
 function SectionCard({ title, children }) {
   return (
-    <div className="rounded-control border border-slate-100 bg-slate-50/60 p-4">
-      <h4 className="mb-3 text-xs font-black uppercase tracking-wide text-amber-700">{title}</h4>
+    <div className={sectionBox}>
+      <h4 className={sectionHead} style={serif}>{title}</h4>
       <div className="grid gap-3 sm:grid-cols-2">{children}</div>
     </div>
   );
@@ -383,15 +445,10 @@ function VariantEditRow({ variant, vendorId, productId, onSaved }) {
   const sellingDisplay = variant.offer?.sellingPrice ?? variant.offer?.price;
   const saleDisplay    = variant.offer?.salePrice;
 
-  // FIXED — PUT /products/inventory/:vendorId/:productId/:variantId already
-  // returns the fully updated inventory doc in `data`
-  // ({ stock, maxQty, isActive, stockStatus, productId: {...}, variantId: {...} }).
-  // Previously this ignored the response body and just called onSaved()
-  // to trigger a full getById() refetch — an extra round trip that also
-  // depended on mergeInventoryRows, which was broken (see note above).
-  // Now the fresh doc is used to update the input immediately and is
-  // passed up via onSaved(updated) so the parent can patch state directly
-  // without waiting on a refetch.
+  // PUT /products/inventory/:vendorId/:productId/:variantId already returns
+  // the fully updated inventory doc in `data`. The fresh doc is used to
+  // update the input immediately and is passed up via onSaved(updated) so
+  // the parent can patch state directly without waiting on a refetch.
   const saveStock = async () => {
     setSaving(true);
     setError("");
@@ -428,49 +485,49 @@ function VariantEditRow({ variant, vendorId, productId, onSaved }) {
   };
 
   return (
-    <tr>
-      <td className="py-2 pr-3 font-mono text-ink-800">{variant.sku}</td>
-      <td className="py-2 pr-3 text-ink-800">
+    <tr className="transition-colors hover:bg-[rgb(var(--tint-100)/0.4)]">
+      <td className="py-2 pr-3 font-mono text-slate-800">{variant.sku}</td>
+      <td className="py-2 pr-3 text-slate-800">
         {attrsList.join(", ")}
       </td>
       <td className="py-2 pr-3 text-slate-500 line-through">{mrpDisplay != null ? inr(mrpDisplay) : "—"}</td>
-      <td className="py-2 pr-3 text-ink-800">{sellingDisplay != null ? inr(sellingDisplay) : "—"}</td>
-      <td className="py-2 pr-3 font-bold text-ink-950">{saleDisplay != null ? inr(saleDisplay) : "—"}</td>
+      <td className="py-2 pr-3 text-slate-800">{sellingDisplay != null ? inr(sellingDisplay) : "—"}</td>
+      <td className="py-2 pr-3 font-semibold text-slate-900">{saleDisplay != null ? inr(saleDisplay) : "—"}</td>
       <td className="py-2 pr-3">
         <div className="flex items-center gap-1.5">
           <input
             type="number"
             value={stock}
             onChange={(e) => setStock(e.target.value)}
-            className="w-16 rounded-control border border-slate-200 px-1.5 py-1 text-xs outline-none focus:border-amber-500"
+            className="w-16 rounded-[var(--radius-control)] border border-stone-200 px-1.5 py-1 text-xs outline-none focus:border-[rgb(var(--brand))]"
           />
           <button
             onClick={saveStock}
             disabled={saving}
             title="Save stock"
-            className="flex h-6 w-6 items-center justify-center rounded-control border border-slate-200 text-slate-500 hover:border-emerald-400 hover:text-emerald-600 disabled:opacity-50"
+            className="flex h-6 w-6 items-center justify-center rounded-[var(--radius-control)] border border-stone-200 text-slate-500 transition-colors hover:border-emerald-400 hover:text-emerald-700 disabled:opacity-50"
           >
-            {saving ? <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-emerald-300 border-t-emerald-600" /> : <Save size={12} />}
+            {saving ? <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-emerald-300 border-t-emerald-700" /> : <Save size={12} />}
           </button>
-          {savedFlash && <CheckCircle size={13} className="text-emerald-600" />}
+          {savedFlash && <CheckCircle size={13} className="text-emerald-700" />}
         </div>
       </td>
-      <td className="py-2 pr-3 text-ink-800">{variant.offer?.itemCondition ?? "—"}</td>
+      <td className="py-2 pr-3 text-slate-800">{variant.offer?.itemCondition ?? "—"}</td>
       <td className="py-2 pr-3">
         <button
           onClick={toggleStatus}
           disabled={statusBusy}
           title={isActive ? "Deactivate variant" : "Activate variant"}
-          className={`flex h-6 w-6 items-center justify-center rounded-control border transition-colors disabled:opacity-50 ${
-            isActive ? "border-slate-200 text-emerald-600 hover:border-red-400 hover:text-red-600"
-                     : "border-slate-200 text-slate-400 hover:border-emerald-400 hover:text-emerald-600"
+          className={`flex h-6 w-6 items-center justify-center rounded-[var(--radius-control)] border transition-colors disabled:opacity-50 ${
+            isActive ? "border-stone-200 text-emerald-700 hover:border-rose-400 hover:text-rose-700"
+                     : "border-stone-200 text-slate-400 hover:border-emerald-400 hover:text-emerald-700"
           }`}
         >
           {statusBusy ? (
-            <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-slate-300 border-t-ink-700" />
+            <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-stone-300 border-t-slate-700" />
           ) : isActive ? <Power size={12} /> : <PowerOff size={12} />}
         </button>
-        {error && <p className="mt-1 text-[10px] text-red-500">{error}</p>}
+        {error && <p className="mt-1 text-[10px] text-rose-600">{error}</p>}
       </td>
     </tr>
   );
@@ -493,21 +550,23 @@ function ViewModal({ loading, error, payload, fallbackName, onClose, onRefresh }
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
       onClick={onClose}
     >
       <div
-        className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-card bg-white shadow-pop"
+        className="relative max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-[var(--radius-card)] bg-white shadow-pop ring-1 ring-[rgb(var(--brand-line)/0.4)]"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-slate-100 bg-white px-6 py-4">
+        <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-stone-200 bg-gradient-to-r from-[rgb(var(--tint-100))] to-white px-6 py-4">
           <div>
-            <p className="text-sm font-medium text-amber-600">Product details</p>
-            <h3 className="mt-0.5 text-lg font-bold text-ink-950">{displayName}</h3>
+            <p className={`inline-flex items-center gap-2 text-sm font-medium ${BRAND_TXT}`}>
+              <Gem size={13} strokeWidth={1.6} /> Product details
+            </p>
+            <h3 className="mt-0.5 text-2xl font-semibold text-slate-900" style={serif}>{displayName}</h3>
           </div>
           <button
             onClick={onClose}
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-control border border-slate-200 text-slate-500 hover:border-slate-400 hover:text-ink-800"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[var(--radius-control)] border border-stone-200 bg-white text-slate-500 transition-colors hover:border-stone-400 hover:text-slate-900"
           >
             <X size={16} />
           </button>
@@ -517,13 +576,13 @@ function ViewModal({ loading, error, payload, fallbackName, onClose, onRefresh }
 
           {loading && (
             <div className="flex items-center justify-center gap-2 py-16 text-sm text-slate-400">
-              <span className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-slate-300 border-t-amber-500" />
+              <span className={spinner} />
               Loading full product details…
             </div>
           )}
 
           {!loading && error && (
-            <div className="py-10 text-center text-sm text-red-500">⚠ {error}</div>
+            <div className="py-10 text-center text-sm text-rose-600">⚠ {error}</div>
           )}
 
           {!loading && !error && p && (
@@ -535,7 +594,7 @@ function ViewModal({ loading, error, payload, fallbackName, onClose, onRefresh }
                       key={i}
                       src={img}
                       alt={`${displayName} ${i + 1}`}
-                      className="h-24 w-24 rounded-control object-cover ring-1 ring-slate-200"
+                      className="h-24 w-24 rounded-[var(--radius-control)] object-cover ring-1 ring-stone-200"
                       onError={(e) => { e.currentTarget.style.display = "none"; }}
                     />
                   ))}
@@ -555,13 +614,13 @@ function ViewModal({ loading, error, payload, fallbackName, onClose, onRefresh }
               </SectionCard>
 
               {(desc.productDescription || desc.bulletPoints?.length > 0) && (
-                <div className="rounded-control border border-slate-100 bg-slate-50/60 p-4">
-                  <h4 className="mb-2 text-xs font-black uppercase tracking-wide text-amber-700">Description</h4>
+                <div className={sectionBox}>
+                  <h4 className={sectionHead} style={serif}>Description</h4>
                   {desc.productDescription && (
-                    <p className="mb-3 whitespace-pre-wrap text-sm text-ink-800">{desc.productDescription}</p>
+                    <p className="mb-3 whitespace-pre-wrap text-sm text-slate-800">{desc.productDescription}</p>
                   )}
                   {desc.bulletPoints?.length > 0 && (
-                    <ul className="list-disc space-y-1 pl-4 text-sm text-ink-900">
+                    <ul className="list-disc space-y-1 pl-4 text-sm text-slate-900">
                       {desc.bulletPoints.map((b, i) => <li key={i}>{b}</li>)}
                     </ul>
                   )}
@@ -638,15 +697,15 @@ function ViewModal({ loading, error, payload, fallbackName, onClose, onRefresh }
               )}
 
               {attributesMeta.length > 0 && (
-                <div className="rounded-control border border-slate-100 bg-slate-50/60 p-4">
-                  <h4 className="mb-3 text-xs font-black uppercase tracking-wide text-amber-700">Attributes</h4>
+                <div className={sectionBox}>
+                  <h4 className={sectionHead} style={serif}>Attributes</h4>
                   <div className="space-y-2">
                     {attributesMeta.map((a) => (
                       <div key={a._id ?? a.name}>
-                        <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">{a.name}</p>
+                        <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">{a.name}</p>
                         <div className="mt-1 flex flex-wrap gap-1.5">
                           {(a.values ?? []).map((v, i) => (
-                            <span key={i} className="rounded-full bg-white px-2.5 py-0.5 text-xs font-medium text-ink-800 ring-1 ring-slate-200">
+                            <span key={i} className={`rounded-full ${TINT} px-2.5 py-0.5 text-xs font-medium text-slate-800 ring-1 ring-[rgb(var(--brand-line)/0.4)]`}>
                               {v}
                             </span>
                           ))}
@@ -658,14 +717,14 @@ function ViewModal({ loading, error, payload, fallbackName, onClose, onRefresh }
               )}
 
               {variants.length > 0 && (
-                <div className="rounded-control border border-slate-100 bg-slate-50/60 p-4">
-                  <h4 className="mb-3 text-xs font-black uppercase tracking-wide text-amber-700">
+                <div className={sectionBox}>
+                  <h4 className={sectionHead} style={serif}>
                     Variants <span className="text-slate-400">({variants.length})</span>
                   </h4>
                   <div className="overflow-x-auto">
                     <table className="w-full text-left text-xs">
                       <thead>
-                        <tr className="border-b border-slate-200 text-slate-500">
+                        <tr className="border-b border-stone-200 text-slate-500">
                           <th className="py-2 pr-3 font-semibold">SKU</th>
                           <th className="py-2 pr-3 font-semibold">Attributes</th>
                           <th className="py-2 pr-3 font-semibold">MRP</th>
@@ -676,7 +735,7 @@ function ViewModal({ loading, error, payload, fallbackName, onClose, onRefresh }
                           <th className="py-2 pr-3 font-semibold">Status</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-slate-100">
+                      <tbody className="divide-y divide-stone-100">
                         {variants.map((v) => (
                           <VariantEditRow
                             key={v._id}
@@ -702,13 +761,8 @@ function ViewModal({ loading, error, payload, fallbackName, onClose, onRefresh }
           )}
         </div>
 
-        <div className="sticky bottom-0 flex justify-end border-t border-slate-100 bg-white px-6 py-3">
-          <button
-            onClick={onClose}
-            className="rounded-control border border-slate-300 px-4 py-2 text-sm font-medium hover:bg-slate-50"
-          >
-            Close
-          </button>
+        <div className="sticky bottom-0 flex justify-end border-t border-stone-200 bg-white px-6 py-3">
+          <button onClick={onClose} className={btnGhost}>Close</button>
         </div>
       </div>
     </div>
@@ -764,9 +818,8 @@ export default function Products() {
   const [inventorySyncing, setInventorySyncing] = useState(false);
 
   // category id -> name lookup. GET /products doesn't populate
-  // categoryId with { _id, name }, only the raw ObjectId string, so the
-  // table/filter fell back to "—" every time. Fetch /categories once and
-  // resolve names ourselves regardless of what shape categoryId comes in.
+  // categoryId with { _id, name }, only the raw ObjectId string, so we
+  // fetch /categories once and resolve names ourselves.
   const [categoryLookup, setCategoryLookup] = useState({});
 
   useEffect(() => {
@@ -811,14 +864,11 @@ export default function Products() {
     }
   };
 
-  // FIXED — refreshView now accepts the fresh inventory doc returned
-  // directly by PUT /products/inventory/:vendorId/:productId/:variantId
-  // (shape: { stock, maxQty, isActive, productId: {_id,...}, variantId:
-  // {_id,...} }). When it's provided we patch viewPayload and catalog
-  // in-place instead of firing a full getById() refetch — cheaper, and
-  // avoids depending on a second round trip. If no payload is passed
-  // (e.g. after a variant status toggle, or any other caller that still
-  // wants a full refresh) it falls back to the original getById() path.
+  // refreshView accepts the fresh inventory doc returned directly by
+  // PUT /products/inventory/:vendorId/:productId/:variantId. When provided
+  // we patch viewPayload and catalog in-place instead of a full getById()
+  // refetch. With no payload (e.g. after a variant status toggle) it falls
+  // back to the original getById() path.
   const refreshView = async (updatedInventory) => {
     if (updatedInventory) {
       const updVariantId  = idStr(updatedInventory.variantId);
@@ -893,19 +943,11 @@ export default function Products() {
     }
   }, [location.state]);
 
-  // ── fetch catalog — ENDPOINT #20 (/products/vendor/:vendorId) is
-  // wired in: vendor-scoped sessions hit the vendor-specific endpoint
-  // directly instead of pulling ALL products (every vendor's) and
-  // filtering client-side. Super Admin / "all vendors" view still uses
-  // the generic getAll() (endpoint #2).
-  //
-  // The list endpoints (getAll / byVendor) don't populate each variant's
-  // nested `inventory.stock` the way GET /products/:id does. For
-  // vendor-scoped sessions we pull the real numbers from
-  // /products/inventory/vendor/:vendorId (endpoint #17, same one the
-  // "Sync inventory" button uses) and merge them in right after the
-  // catalog loads, using the now-fixed mergeInventoryRows(), so the
-  // table is correct without needing a manual sync click. ──
+  // ── fetch catalog — ENDPOINT #20 (/products/vendor/:vendorId) for
+  // vendor-scoped sessions; Super Admin / "all vendors" uses getAll() (#2).
+  // For vendor-scoped sessions the real stock numbers are pulled from
+  // /products/inventory/vendor/:vendorId (#17) and merged in right after
+  // the catalog loads.
   const fetchProducts = async () => {
     setProductsLoading(true);
     setProductsError("");
@@ -960,14 +1002,8 @@ export default function Products() {
       .catch(() => setCategoryFacetValues(null));
   }, [categoryFilter]);
 
-  // ── ENDPOINT #17 (/products/inventory/vendor/:vendorId). Manual sync
-  // button — still here for an on-demand pull; fetchProducts() above now
-  // also does this automatically on load/refresh. Confirmed response
-  // shape from a live call:
-  //   [{ _id, vendorId: {...}, variantId: {...}, productId: {...},
-  //      stock, maxQty, isActive, stockStatus, createdAt, updatedAt }, ...]
-  // productId/variantId are POPULATED OBJECTS here — mergeInventoryRows
-  // now unwraps them with idStr() instead of stringifying the object.
+  // ── ENDPOINT #17 manual sync button — fetchProducts() also does this
+  // automatically on load/refresh.
   const syncInventoryFromVendor = async () => {
     if (!vendorIdFromStorage) return;
     setInventorySyncing(true);
@@ -1012,8 +1048,7 @@ export default function Products() {
   const updatePageSize = (size) => { setPageSize(size); setPage(1); };
 
   // Filter out any product without a usable id so selection state never
-  // holds `undefined`/`null` entries that would otherwise slip into a
-  // bulk request payload.
+  // holds `undefined`/`null` entries that would slip into a bulk payload.
   const pagedIds = pagedProducts.map((p) => p._id ?? p.id).filter(Boolean);
   const allPagedSelected = pagedIds.length > 0 && pagedIds.every((id) => selectedIds.has(id));
 
@@ -1163,8 +1198,11 @@ export default function Products() {
   const facetCategories = catalogCategoryFacets;
   const facetInventoryLevels = ["low", "medium", "high"];
 
+  const activeFilterCount = [statusFilter !== "All", !!categoryFilter, !!inventoryFilter].filter(Boolean).length;
+  const miniSpin = (c) => `inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 ${c}`;
+
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
 
       {deleteTarget && (
         <DeleteModal
@@ -1196,29 +1234,36 @@ export default function Products() {
       )}
 
       {successMsg && (
-        <div className="flex items-center gap-3 rounded-control border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700 shadow-sm">
-          <span className="text-base">✓</span>
+        <div className="flex items-center gap-3 rounded-[var(--radius-control)] border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">
+          <CheckCircle size={16} />
           {successMsg}
         </div>
       )}
 
-      <div className="rounded-card border border-line bg-surface-raised p-5 shadow-card sm:p-6">
-        <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
-          <div>
-            <p className="text-sm font-medium text-amber-600">Inventory command center</p>
-            <h1 className="mt-1 text-[1.65rem] font-bold tracking-tight text-ink-950">Products and catalog</h1>
-            <p className="text-sm text-slate-500">
+      {/* ── Hero ── */}
+      <section className="relative overflow-hidden rounded-[var(--radius-card)] bg-gradient-to-br from-[rgb(var(--hero-a))] via-[rgb(var(--hero-b))] to-[rgb(var(--hero-c))] p-6 ring-1 ring-[rgb(var(--brand-line)/0.4)] sm:p-8">
+        <GoldLine className="inset-x-16" />
+        <div className="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
+          <div className="max-w-xl">
+            <p className="inline-flex items-center gap-2 text-sm font-medium text-[rgb(var(--brand-dark))]">
+              <Gem size={14} strokeWidth={1.6} />
+              Inventory command center
+            </p>
+            <h1 className="mt-2 text-3xl font-semibold leading-tight tracking-tight text-slate-900 sm:text-4xl" style={serif}>
+              Products and catalog
+            </h1>
+            <p className="mt-2 text-sm leading-relaxed text-slate-600">
               {scopeToOwnVendor
                 ? "Your listings — stock health, ASIN status, and catalog ownership."
                 : "Monitor vendor listings, stock health, ASIN status, and catalog ownership."}
             </p>
           </div>
-          <div className="flex flex-col gap-3 sm:flex-row">
+          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
             {!scopeToOwnVendor && (
               <select
                 value={vendorId}
                 onChange={(e) => { setVendorId(e.target.value); setPage(1); }}
-                className="rounded-control border border-line bg-white px-3.5 py-2.5 text-sm text-ink-950 outline-none transition focus:border-amber-500 focus:ring-4 focus:ring-amber-500/10"
+                className={`${fieldBase} cursor-pointer`}
               >
                 <option value="all">All vendors</option>
                 {vendors.map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}
@@ -1226,12 +1271,12 @@ export default function Products() {
             )}
 
             <div className="relative">
-              <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+              <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
               <input
                 value={query}
                 onChange={(e) => { setQuery(e.target.value); setPage(1); }}
                 placeholder="Search catalog, slug… (2+ chars searches server)"
-                className="w-full rounded-control border border-slate-300 py-2 pl-10 pr-3 text-sm outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/30 sm:w-80"
+                className={`${fieldBase} w-full !pl-10 sm:w-80`}
               />
             </div>
 
@@ -1241,97 +1286,112 @@ export default function Products() {
                 onClick={syncInventoryFromVendor}
                 disabled={inventorySyncing}
                 title="Pull latest stock numbers from /products/inventory/vendor/:vendorId"
-                className="inline-flex items-center justify-center gap-2 rounded-control border border-slate-300 px-4 py-2 text-sm font-bold text-ink-800 hover:bg-slate-50 disabled:opacity-50 transition-colors"
+                className={btnGhost}
               >
                 {inventorySyncing ? (
-                  <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-slate-300 border-t-ink-700" />
+                  <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-stone-300 border-t-slate-700" />
                 ) : (
-                  <RefreshCw size={16} />
+                  <RefreshCw size={16} strokeWidth={1.6} />
                 )}
                 Sync inventory
               </button>
             )}
 
-            <button
-              onClick={() => navigate("/vendor/products/add")}
-              className="inline-flex items-center justify-center gap-2 rounded-control bg-amber-500 px-4 py-2 text-sm font-bold text-ink-950 hover:bg-amber-600 transition-colors"
-            >
-              <PackagePlus size={17} /> Add listing
+            <button onClick={() => navigate("/vendor/products/add")} className={btnPrimary}>
+              <PackagePlus size={17} strokeWidth={1.6} /> Add listing
             </button>
           </div>
         </div>
-      </div>
+      </section>
 
-      <div className="grid gap-4 md:grid-cols-3">
-        <MetricCard label="Visible listings"  value={visibleProducts.length}                                        helper="catalog records in view"   icon={Eye}           tone="blue"   />
-        <MetricCard
+      {/* ── Stat cards ── */}
+      <div className="grid gap-5 md:grid-cols-3">
+        <StatCard
+          label="Visible listings"
+          value={visibleProducts.length}
+          helper="catalog records in view"
+          icon={Eye}
+          palette={palettes[0]}
+        />
+        <StatCard
           label="Low stock"
           value={visibleProducts.filter((p) => deriveProductMetrics(p).stock < 15).length}
           helper="needs replenishment"
           icon={AlertTriangle}
-          tone="orange"
+          palette={palettes[1]}
         />
-        <MetricCard label="Suppressed"        value={visibleProducts.filter((p) => normStatus(p.status) === "suppressed").length} helper="requires catalog action" icon={PackageCheck}  tone="red"    />
+        <StatCard
+          label="Suppressed"
+          value={visibleProducts.filter((p) => normStatus(p.status) === "suppressed").length}
+          helper="requires catalog action"
+          icon={PackageCheck}
+          palette={palettes[2]}
+        />
       </div>
 
+      {/* ── Bulk action bar ── */}
       {selectedIds.size > 0 && (
-        <div className="flex flex-wrap items-center gap-3 rounded-control border border-amber-200 bg-amber-50 px-5 py-3">
-          <span className="text-sm font-bold text-amber-700">{selectedIds.size} selected</span>
+        <div className={`flex flex-wrap items-center gap-3 rounded-[var(--radius-card)] border ${LINE_BRD} ${TINT} px-5 py-3`}>
+          <span className={`text-sm font-semibold ${BRAND_TXT}`}>{selectedIds.size} selected</span>
           <button
             onClick={() => runBulkStatusUpdate("Active")}
             disabled={bulkBusy}
-            className="inline-flex items-center gap-1.5 rounded-control border border-emerald-300 bg-white px-3 py-1.5 text-xs font-bold text-emerald-700 hover:bg-emerald-50 disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded-[var(--radius-control)] border border-emerald-300 bg-white px-3 py-1.5 text-xs font-semibold text-emerald-800 transition-colors hover:bg-emerald-50 disabled:opacity-50"
           >
             <CheckCircle size={13} /> Publish
           </button>
           <button
             onClick={() => runBulkStatusUpdate("Suppressed")}
             disabled={bulkBusy}
-            className="inline-flex items-center gap-1.5 rounded-control border border-amber-300 bg-white px-3 py-1.5 text-xs font-bold text-amber-700 hover:bg-amber-50 disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded-[var(--radius-control)] border border-amber-300 bg-white px-3 py-1.5 text-xs font-semibold text-amber-800 transition-colors hover:bg-amber-50 disabled:opacity-50"
           >
             <ArchiveIcon size={13} /> Archive
           </button>
           <button
             onClick={() => setBulkDeleteOpen(true)}
             disabled={bulkBusy}
-            className="inline-flex items-center gap-1.5 rounded-control border border-red-300 bg-white px-3 py-1.5 text-xs font-bold text-red-600 hover:bg-red-50 disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded-[var(--radius-control)] border border-rose-300 bg-white px-3 py-1.5 text-xs font-semibold text-rose-700 transition-colors hover:bg-rose-50 disabled:opacity-50"
           >
             <Trash2 size={13} /> Delete
           </button>
-          {bulkBusy && <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-amber-300 border-t-amber-600" />}
-          <button onClick={clearSelection} className="ml-auto text-xs text-amber-500 hover:underline">Clear selection</button>
+          {bulkBusy && <span className={spinner} />}
+          <button onClick={clearSelection} className={`ml-auto text-xs font-medium ${BRAND_TXT} hover:underline`}>Clear selection</button>
         </div>
       )}
 
-      <div className="overflow-hidden rounded-card border border-line bg-surface-raised shadow-card">
-        <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
-          <h2 className="font-bold text-ink-950">Marketplace catalog</h2>
+      {/* ── Catalog table ── */}
+      <Panel className="overflow-hidden">
+        <div className="flex items-center justify-between border-b border-stone-200 px-5 py-4">
+          <h2 className="flex items-center gap-3 text-xl font-semibold text-slate-900" style={serif}>
+            <ShoppingBag size={17} strokeWidth={1.6} className={BRAND_TXT} />
+            Marketplace catalog
+          </h2>
           <button
             onClick={() => setShowFilters((v) => !v)}
-            className={`inline-flex items-center gap-2 rounded-control border px-3 py-2 text-sm font-medium transition-colors
-              ${showFilters ? "border-amber-500 bg-amber-50 text-amber-700" : "border-slate-300 hover:bg-slate-50"}`}
+            className={`inline-flex items-center gap-2 rounded-[var(--radius-control)] border px-3 py-2 text-sm font-medium transition-colors
+              ${showFilters ? `${LINE_BRD} ${TINT} ${BRAND_TXT}` : "border-stone-200 bg-white text-slate-700 hover:bg-stone-50"}`}
           >
-            <SlidersHorizontal size={16} /> Filters
-            {(statusFilter !== "All" || categoryFilter || inventoryFilter) && (
-              <span className="ml-1 flex h-4 w-4 items-center justify-center rounded-full bg-amber-500 text-[9px] font-black text-white">
-                {[statusFilter !== "All", !!categoryFilter, !!inventoryFilter].filter(Boolean).length}
+            <SlidersHorizontal size={16} strokeWidth={1.6} /> Filters
+            {activeFilterCount > 0 && (
+              <span className={`ml-1 flex h-4 w-4 items-center justify-center rounded-full ${GRAD} text-[9px] font-semibold text-white`}>
+                {activeFilterCount}
               </span>
             )}
           </button>
         </div>
 
         {showFilters && (
-          <div className="flex flex-wrap items-center gap-4 border-b border-slate-100 bg-slate-50 px-5 py-3">
+          <div className="flex flex-wrap items-center gap-4 border-b border-stone-200 bg-stone-50 px-5 py-3">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs font-bold uppercase tracking-wide text-slate-400">Status</span>
+              <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">Status</span>
               {STATUS_OPTIONS.map((s) => (
                 <button
                   key={s}
                   onClick={() => { setStatusFilter(s); setPage(1); }}
                   className={`rounded-full border px-3 py-1 text-xs font-semibold transition-colors
                     ${statusFilter === s
-                      ? "border-amber-500 bg-amber-500 text-ink-950"
-                      : "border-slate-200 bg-white text-ink-700 hover:border-amber-500 hover:text-amber-700"}`}
+                      ? `border-transparent ${GRAD} text-white`
+                      : `border-stone-200 bg-white text-slate-700 hover:border-[rgb(var(--brand-line))] hover:text-[rgb(var(--brand-text))]`}`}
                 >
                   {s}
                 </button>
@@ -1340,11 +1400,11 @@ export default function Products() {
 
             {facetCategories.length > 0 && (
               <div className="flex items-center gap-2">
-                <span className="text-xs font-bold uppercase tracking-wide text-slate-400">Category</span>
+                <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">Category</span>
                 <select
                   value={categoryFilter}
                   onChange={(e) => { setCategoryFilter(e.target.value); setPage(1); }}
-                  className="rounded-control border border-slate-300 px-2 py-1 text-xs outline-none focus:border-amber-500"
+                  className="rounded-[var(--radius-control)] border border-stone-200 bg-white px-2 py-1 text-xs outline-none focus:border-[rgb(var(--brand))]"
                 >
                   <option value="">All</option>
                   {facetCategories.map((c) => (
@@ -1355,21 +1415,21 @@ export default function Products() {
             )}
 
             <div className="flex items-center gap-2">
-              <span className="text-xs font-bold uppercase tracking-wide text-slate-400">Inventory</span>
+              <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">Inventory</span>
               <select
                 value={inventoryFilter}
                 onChange={(e) => { setInventoryFilter(e.target.value); setPage(1); }}
-                className="rounded-control border border-slate-300 px-2 py-1 text-xs outline-none focus:border-amber-500"
+                className="rounded-[var(--radius-control)] border border-stone-200 bg-white px-2 py-1 text-xs outline-none focus:border-[rgb(var(--brand))]"
               >
                 <option value="">All</option>
                 {facetInventoryLevels.map((lvl) => <option key={lvl} value={lvl}>{lvl}</option>)}
               </select>
             </div>
 
-            {(statusFilter !== "All" || categoryFilter || inventoryFilter) && (
+            {activeFilterCount > 0 && (
               <button
                 onClick={() => { setStatusFilter("All"); setCategoryFilter(""); setInventoryFilter(""); setPage(1); }}
-                className="ml-auto text-xs text-slate-400 hover:text-ink-800 underline"
+                className="ml-auto text-xs text-slate-500 underline hover:text-slate-900"
               >
                 Clear filters
               </button>
@@ -1379,28 +1439,28 @@ export default function Products() {
 
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
-            <thead className="bg-ink-800 text-white">
+            <thead className="bg-gradient-to-r from-[rgb(var(--tint-100))] to-[rgb(var(--tint-200))] text-xs uppercase tracking-wide text-slate-600">
               <tr>
                 <th className="px-4 py-3">
                   <input
                     type="checkbox"
                     checked={allPagedSelected}
                     onChange={toggleSelectAllOnPage}
-                    className="h-4 w-4 rounded-control border-slate-300"
+                    className={`h-4 w-4 rounded border-stone-300 ${ACCENT}`}
                   />
                 </th>
                 <th className="px-5 py-3 font-semibold">Product</th>
                 <th className="px-5 py-3 font-semibold">Vendor</th>
                 <th className="px-5 py-3 font-semibold">Inventory</th>
-                <th className="px-5 py-3 font-semibold text-center">Actions</th>
+                <th className="px-5 py-3 text-center font-semibold">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-stone-100">
 
               {productsLoading && (
                 <tr>
                   <td colSpan={7} className="px-5 py-12 text-center text-sm text-slate-400">
-                    <span className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-slate-300 border-t-amber-500 mr-2 align-middle" />
+                    <span className={`${spinner} mr-2 align-middle`} />
                     Loading products…
                   </td>
                 </tr>
@@ -1408,7 +1468,7 @@ export default function Products() {
 
               {!productsLoading && productsError && (
                 <tr>
-                  <td colSpan={7} className="px-5 py-10 text-center text-sm text-red-500">
+                  <td colSpan={7} className="px-5 py-10 text-center text-sm text-rose-600">
                     ⚠ {productsError}
                   </td>
                 </tr>
@@ -1439,35 +1499,35 @@ export default function Products() {
                 const { stock: displayStock } = deriveProductMetrics(p);
 
                 return (
-                  <tr key={productId} className={`hover:bg-[rgb(var(--page-bg))] ${isChecked ? "bg-amber-50/40" : ""}`}>
+                  <tr key={productId} className={`transition-colors hover:bg-[rgb(var(--tint-100)/0.4)] ${isChecked ? "bg-[rgb(var(--tint-100)/0.6)]" : ""}`}>
 
                     <td className="px-4 py-4">
                       <input
                         type="checkbox"
                         checked={isChecked}
                         onChange={() => toggleSelect(productId)}
-                        className="h-4 w-4 rounded-control border-slate-300"
+                        className={`h-4 w-4 rounded border-stone-300 ${ACCENT}`}
                       />
                     </td>
 
                     <td className="px-5 py-4">
                       <div className="flex items-center gap-3">
                         {displayImage ? (
-                          <img src={displayImage} alt={displayName} className="h-12 w-12 rounded-control object-cover ring-1 ring-slate-200" />
+                          <img src={displayImage} alt={displayName} className="h-12 w-12 rounded-[var(--radius-control)] object-cover ring-1 ring-stone-200" />
                         ) : (
-                          <div className="h-12 w-12 rounded-control bg-slate-100 ring-1 ring-slate-200 flex items-center justify-center text-slate-300 text-xs">N/A</div>
+                          <div className="flex h-12 w-12 items-center justify-center rounded-[var(--radius-control)] bg-stone-100 text-xs text-stone-400 ring-1 ring-stone-200">N/A</div>
                         )}
                         <div>
-                          <p className="font-bold text-ink-950 max-w-[180px] truncate">{displayName}</p>
+                          <p className="max-w-[180px] truncate font-semibold text-slate-900">{displayName}</p>
                           <p className="text-xs text-slate-500">{displayAsin} · {displayCategory}</p>
                         </div>
                       </div>
                     </td>
 
-                    <td className="px-5 py-4 font-medium">{vendorName(p.vendorId)}</td>
+                    <td className="px-5 py-4 font-medium text-slate-800">{vendorName(p.vendorId)}</td>
 
                     <td className="px-5 py-4">
-                      <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold ring-1 ${stockClass({ stock: displayStock, status: displayStatus })}`}>
+                      <span className={`inline-flex items-center gap-1 rounded-[var(--radius-control)] px-2.5 py-1 text-xs font-semibold ring-1 ${stockClass({ stock: displayStock, status: displayStatus })}`}>
                         {displayStock < 15 && <AlertTriangle size={13} />}
                         {displayStatus} · {displayStock}
                       </span>
@@ -1478,7 +1538,7 @@ export default function Products() {
                         <button
                           onClick={() => openView(p)}
                           title="View product details"
-                          className="flex h-8 w-8 items-center justify-center rounded-control border border-slate-200 bg-white text-slate-500 hover:border-blue-400 hover:text-blue-600 transition-colors"
+                          className={`${iconBtn}${hoverBlue}`}
                         >
                           <Eye size={14} />
                         </button>
@@ -1488,10 +1548,10 @@ export default function Products() {
                             onClick={() => runProductAction(p, "archive")}
                             disabled={isBusy}
                             title="Archive product"
-                            className="flex h-8 w-8 items-center justify-center rounded-control border border-slate-200 bg-white text-slate-500 hover:border-amber-400 hover:text-amber-600 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+                            className={`${iconBtn}${hoverBrand}`}
                           >
                             {isBusy && actionState.type === "archive" ? (
-                              <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-amber-300 border-t-amber-600" />
+                              <span className={miniSpin("border-amber-300 border-t-amber-700")} />
                             ) : (
                               <ArchiveIcon size={14} />
                             )}
@@ -1501,10 +1561,10 @@ export default function Products() {
                             onClick={() => runProductAction(p, "publish")}
                             disabled={isBusy}
                             title="Publish product"
-                            className="flex h-8 w-8 items-center justify-center rounded-control border border-slate-200 bg-white text-slate-500 hover:border-emerald-400 hover:text-emerald-600 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+                            className={`${iconBtn}${hoverGreen}`}
                           >
                             {isBusy && actionState.type === "publish" ? (
-                              <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-emerald-300 border-t-emerald-600" />
+                              <span className={miniSpin("border-emerald-300 border-t-emerald-700")} />
                             ) : (
                               <CheckCircle size={14} />
                             )}
@@ -1515,10 +1575,10 @@ export default function Products() {
                           onClick={() => runProductAction(p, "duplicate")}
                           disabled={isBusy}
                           title="Duplicate product"
-                          className="flex h-8 w-8 items-center justify-center rounded-control border border-slate-200 bg-white text-slate-500 hover:border-amber-400 hover:text-amber-600 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+                          className={`${iconBtn}${hoverBrand}`}
                         >
                           {isBusy && actionState.type === "duplicate" ? (
-                            <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-amber-300 border-t-amber-600" />
+                            <span className={miniSpin("border-amber-300 border-t-amber-700")} />
                           ) : (
                             <Copy size={14} />
                           )}
@@ -1527,7 +1587,7 @@ export default function Products() {
                         <button
                           onClick={() => openView(p)}
                           title="Manage inventory"
-                          className="flex h-8 w-8 items-center justify-center rounded-control border border-slate-200 bg-white text-slate-500 hover:border-purple-400 hover:text-purple-600 transition-colors"
+                          className={`${iconBtn}${hoverBrand}`}
                         >
                           <Boxes size={14} />
                         </button>
@@ -1535,7 +1595,7 @@ export default function Products() {
                         <button
                           onClick={() => navigate(`/vendor/products/${productId}/edit`)}
                           title="Edit product"
-                          className="flex h-8 w-8 items-center justify-center rounded-control border border-slate-200 bg-white text-slate-500 hover:border-amber-500 hover:text-amber-700 transition-colors"
+                          className={`${iconBtn}${hoverBrand}`}
                         >
                           <Pencil size={14} />
                         </button>
@@ -1543,7 +1603,7 @@ export default function Products() {
                         <button
                           onClick={() => setDeleteTarget(p)}
                           title="Delete product"
-                          className="flex h-8 w-8 items-center justify-center rounded-control border border-slate-200 bg-white text-slate-500 hover:border-red-400 hover:text-red-600 transition-colors"
+                          className={`${iconBtn}${hoverRose}`}
                         >
                           <Trash2 size={14} />
                         </button>
@@ -1565,7 +1625,7 @@ export default function Products() {
           onPageChange={setPage}
           onPageSizeChange={updatePageSize}
         />
-      </div>
+      </Panel>
 
     </div>
   );

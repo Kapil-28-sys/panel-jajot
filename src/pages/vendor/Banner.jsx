@@ -1,8 +1,40 @@
 import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { Plus, ImageOff, Megaphone, Radio, PauseCircle, Layers, AlertTriangle } from "lucide-react";
 import { getCurrentSession } from "../../config/localAuth"; // adjust path as per your project structure
 
 const API_BASE = "https://amazon-multi-vendor-3.onrender.com/api";
+
+/* Same design tokens as Dashboard / Inventory / Attributes (CSS variables from your theme). */
+const serif = { fontFamily: "var(--font-display)" };
+
+const primaryBtn =
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-[var(--radius-control)] bg-gradient-to-br from-[rgb(var(--brand))] to-[rgb(var(--brand-dark))] px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[rgb(var(--brand-line))] disabled:opacity-60";
+
+const ghostBtn =
+  "inline-flex flex-1 items-center justify-center rounded-[var(--radius-control)] border border-stone-300 bg-white px-2 py-1.5 text-xs font-semibold text-slate-800 transition-colors hover:bg-stone-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[rgb(var(--brand-line))] disabled:opacity-60";
+
+function GoldLine({ className = "inset-x-10" }) {
+  return (
+    <span
+      className={`pointer-events-none absolute top-0 z-10 h-px bg-gradient-to-r from-transparent via-[rgb(var(--brand-line))] to-transparent ${className}`}
+    />
+  );
+}
+
+function GlanceStat({ icon: Icon, value, label }) {
+  return (
+    <div className="flex items-center gap-3 px-5 first:pl-0 last:pr-0">
+      <Icon size={18} strokeWidth={1.5} className="text-[rgb(var(--brand-text))]" />
+      <div>
+        <p className="text-2xl font-semibold leading-none tabular-nums text-slate-900" style={serif}>
+          {value}
+        </p>
+        <p className="mt-1 text-xs text-slate-500">{label}</p>
+      </div>
+    </div>
+  );
+}
 
 // Safely parses a fetch Response as JSON. If the server returned HTML
 // (404 page, 500 error page, login redirect, etc.) this throws a clear,
@@ -147,132 +179,185 @@ export default function Banners() {
     return true;
   });
 
-  return (
-    <div style={styles.page}>
-      <div style={styles.header}>
-        <div>
-          <h1 style={styles.heading}>Banners</h1>
-          <p style={styles.subheading}>
-            Manage promotional banners shown across the storefront
-          </p>
-        </div>
-        <button style={styles.createBtn} onClick={() => navigate(`${bannerBasePath}/add`)}>
-          + Create Banner
-        </button>
-      </div>
+  const liveCount = banners.filter(isCurrentlyLive).length;
+  const inactiveCount = banners.filter((b) => !b.is_active).length;
 
-      <div style={styles.toolbar}>
-        <div style={styles.filterGroup}>
+  const goAdd = () => navigate(`${bannerBasePath}/add`);
+
+  return (
+    <div className="min-h-screen space-y-6 bg-[rgb(var(--page-bg))] p-4 md:p-6">
+      {/* Hero — same look as Dashboard / Inventory / Attributes */}
+      <section className="relative overflow-hidden rounded-[var(--radius-card)] bg-gradient-to-br from-[rgb(var(--hero-a))] via-[rgb(var(--hero-b))] to-[rgb(var(--hero-c))] p-6 ring-1 ring-[rgb(var(--brand-line)/0.4)] sm:p-8">
+        <GoldLine className="inset-x-16" />
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+          <div className="max-w-2xl">
+            <p className="inline-flex items-center gap-2 text-sm font-medium text-[rgb(var(--brand-dark))]">
+              <Megaphone size={14} strokeWidth={1.6} />
+              Storefront promotions
+            </p>
+            <h1 className="mt-2 text-3xl font-semibold leading-tight tracking-tight text-slate-900 sm:text-4xl" style={serif}>
+              Banners
+            </h1>
+            <p className="mt-2 max-w-xl text-sm leading-relaxed text-slate-600">
+              Manage promotional banners shown across the storefront
+            </p>
+          </div>
+          <div className="flex flex-col gap-4 sm:items-end">
+            <div className="flex flex-wrap gap-y-4 divide-x divide-[rgb(var(--brand-line)/0.4)]">
+              <GlanceStat icon={Layers} value={loading ? "—" : banners.length} label="banners" />
+              <GlanceStat icon={Radio} value={loading ? "—" : liveCount} label="live now" />
+              <GlanceStat icon={PauseCircle} value={loading ? "—" : inactiveCount} label="inactive" />
+            </div>
+            <button className={primaryBtn} onClick={goAdd}>
+              <Plus className="h-4 w-4" /> Create banner
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* Toolbar */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="inline-flex gap-1 rounded-[var(--radius-control)] bg-stone-100 p-1">
           {["all", "active", "inactive"].map((f) => (
             <button
               key={f}
               onClick={() => setStatusFilter(f)}
-              style={{
-                ...styles.filterBtn,
-                ...(statusFilter === f ? styles.filterBtnActive : {}),
-              }}
+              aria-pressed={statusFilter === f}
+              className={`rounded-[var(--radius-control)] px-4 py-1.5 text-sm transition-colors ${
+                statusFilter === f
+                  ? "bg-white font-semibold text-slate-900 shadow-sm"
+                  : "text-slate-500 hover:text-slate-800"
+              }`}
             >
               {f === "all" ? "All" : f === "active" ? "Active" : "Inactive"}
             </button>
           ))}
         </div>
-        <span style={styles.countText}>
-          {filteredBanners.length} banner{filteredBanners.length !== 1 ? "s" : ""}
+        <span className="text-sm text-slate-500">
+          <span className="font-semibold tabular-nums text-slate-900">{filteredBanners.length}</span>{" "}
+          banner{filteredBanners.length !== 1 ? "s" : ""}
         </span>
       </div>
 
-      {error && <div style={styles.errorBox}>{error}</div>}
+      {error && (
+        <div className="flex items-start gap-2 rounded-[var(--radius-control)] border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">
+          <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0" />
+          <p>{error}</p>
+        </div>
+      )}
 
       {loading ? (
-        <div style={styles.emptyState}>Loading banners…</div>
+        <div className="relative rounded-[var(--radius-card)] bg-white px-6 py-14 text-center text-sm text-slate-400 ring-1 ring-stone-200">
+          <GoldLine />
+          Loading banners…
+        </div>
       ) : filteredBanners.length === 0 ? (
-        <div style={styles.emptyState}>
-          <p style={{ margin: 0, fontSize: "15px", fontWeight: 600 }}>No banners found</p>
-          <p style={{ margin: "6px 0 16px", fontSize: "13px", color: "#6b7280" }}>
+        <div className="relative rounded-[var(--radius-card)] bg-white px-6 py-14 text-center ring-1 ring-stone-200">
+          <GoldLine />
+          <ImageOff className="mx-auto mb-3 h-8 w-8 text-stone-300" />
+          <p className="text-lg font-semibold text-slate-900" style={serif}>
+            No banners found
+          </p>
+          <p className="mb-5 mt-1 text-sm text-slate-500">
             Create your first promotional banner to get started.
           </p>
-          <button style={styles.createBtn} onClick={() => navigate(`${bannerBasePath}/add`)}>
-            + Create Banner
+          <button className={primaryBtn} onClick={goAdd}>
+            <Plus className="h-4 w-4" /> Create banner
           </button>
         </div>
       ) : (
-        <div style={styles.grid}>
+        <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
           {filteredBanners.map((banner) => {
             const live = isCurrentlyLive(banner);
             const imgFailed = imgErrorIds[banner._id];
 
             return (
-              <div key={banner._id} style={styles.card}>
-                <div style={styles.imageWrap}>
+              <div
+                key={banner._id}
+                className="relative flex flex-col overflow-hidden rounded-[var(--radius-card)] bg-white ring-1 ring-stone-200 transition-shadow hover:shadow-md"
+              >
+                <div className="relative h-40 w-full bg-gradient-to-br from-stone-800 to-stone-900">
                   {banner.image_url && !imgFailed ? (
                     <img
                       src={banner.image_url}
                       alt={banner.title}
-                      style={styles.image}
+                      className="h-full w-full object-cover"
                       onError={() =>
                         setImgErrorIds((prev) => ({ ...prev, [banner._id]: true }))
                       }
                     />
                   ) : (
-                    <div style={styles.imagePlaceholder}>No image</div>
+                    <div className="flex h-full w-full flex-col items-center justify-center gap-1 text-sm text-stone-400">
+                      <ImageOff className="h-5 w-5" />
+                      No image
+                    </div>
                   )}
 
-                  <div style={styles.imageOverlay}>
+                  <div className="absolute inset-x-2.5 top-2.5 flex items-start justify-between">
                     {banner.discount_percentage ? (
-                      <span style={styles.discountBadge}>
+                      <span className="rounded-[var(--radius-control)] bg-rose-700 px-2 py-0.5 text-xs font-bold text-white">
                         {banner.discount_percentage}% OFF
                       </span>
-                    ) : null}
+                    ) : (
+                      <span />
+                    )}
                     <span
-                      style={{
-                        ...styles.liveBadge,
-                        background: live ? "#067d62" : "#6b7280",
-                      }}
+                      className={`rounded-[var(--radius-control)] px-2 py-0.5 text-xs font-semibold text-white ${
+                        live ? "bg-emerald-700" : banner.is_active ? "bg-amber-700" : "bg-stone-500"
+                      }`}
                     >
                       {live ? "● Live now" : banner.is_active ? "Scheduled" : "Inactive"}
                     </span>
                   </div>
                 </div>
 
-                <div style={styles.cardBody}>
-                  <h3 style={styles.cardTitle}>{banner.title}</h3>
+                <div className="flex flex-1 flex-col gap-2 p-4">
+                  <h3 className="text-lg font-semibold leading-snug text-slate-900" style={serif}>
+                    {banner.title}
+                  </h3>
 
-                  <div style={styles.tagsRow}>
+                  <div className="flex flex-wrap gap-1.5">
                     {banner.categoryId?.name && (
-                      <span style={styles.tag}>{banner.categoryId.name}</span>
+                      <span className="rounded-[var(--radius-control)] bg-stone-100 px-2 py-0.5 text-xs font-medium text-slate-700">
+                        {banner.categoryId.name}
+                      </span>
                     )}
                     {isSuperAdmin && banner.vendorId?.name && (
-                      <span style={styles.tagAlt}>
+                      <span className="rounded-[var(--radius-control)] bg-[rgb(var(--tint-100))] px-2 py-0.5 text-xs font-medium text-[rgb(var(--brand-text))] ring-1 ring-[rgb(var(--brand-line)/0.35)]">
                         {banner.vendorId?.companyname || banner.vendorId?.name}
                       </span>
                     )}
                     {banner.specialization && (
-                      <span style={styles.tag}>{banner.specialization}</span>
+                      <span className="rounded-[var(--radius-control)] bg-stone-100 px-2 py-0.5 text-xs font-medium text-slate-700">
+                        {banner.specialization}
+                      </span>
                     )}
                   </div>
 
-                  <div style={styles.metaLine}>
-                    <span style={styles.metaKey}>Session</span>
-                    <span style={styles.metaVal}>{banner.session_type || "—"}</span>
-                  </div>
-                  <div style={styles.metaLine}>
-                    <span style={styles.metaKey}>Linked Products</span>
-                    <span style={styles.metaVal}>{banner.product_count ?? 0}</span>
-                  </div>
-                  <div style={styles.metaLine}>
-                    <span style={styles.metaKey}>Window</span>
-                    <span style={styles.metaVal}>
-                      {banner.starts_at && banner.ends_at
-                        ? `${new Date(banner.starts_at).toLocaleDateString()} → ${new Date(
-                            banner.ends_at
-                          ).toLocaleDateString()}`
-                        : "No date range set"}
-                    </span>
-                  </div>
+                  <dl className="mt-1 space-y-1.5 text-xs">
+                    <div className="flex justify-between gap-3">
+                      <dt className="text-slate-500">Session</dt>
+                      <dd className="font-medium text-slate-900">{banner.session_type || "—"}</dd>
+                    </div>
+                    <div className="flex justify-between gap-3">
+                      <dt className="text-slate-500">Linked products</dt>
+                      <dd className="font-medium tabular-nums text-slate-900">{banner.product_count ?? 0}</dd>
+                    </div>
+                    <div className="flex justify-between gap-3">
+                      <dt className="text-slate-500">Window</dt>
+                      <dd className="text-right font-medium text-slate-900">
+                        {banner.starts_at && banner.ends_at
+                          ? `${new Date(banner.starts_at).toLocaleDateString()} → ${new Date(
+                              banner.ends_at
+                            ).toLocaleDateString()}`
+                          : "No date range set"}
+                      </dd>
+                    </div>
+                  </dl>
 
-                  <div style={styles.cardActions}>
+                  <div className="mt-auto flex gap-2 pt-3">
                     <button
-                      style={styles.toggleBtn}
+                      className={ghostBtn}
                       onClick={() => handleToggleActive(banner)}
                       disabled={togglingId === banner._id}
                     >
@@ -283,13 +368,13 @@ export default function Banners() {
                         : "Activate"}
                     </button>
                     <button
-                      style={styles.editBtn}
+                      className="inline-flex flex-1 items-center justify-center rounded-[var(--radius-control)] bg-gradient-to-br from-[rgb(var(--brand))] to-[rgb(var(--brand-dark))] px-2 py-1.5 text-xs font-semibold text-white transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[rgb(var(--brand-line))]"
                       onClick={() => navigate(`${bannerBasePath}/edit/${banner._id}`)}
                     >
                       Edit
                     </button>
                     <button
-                      style={styles.deleteBtn}
+                      className="inline-flex flex-1 items-center justify-center rounded-[var(--radius-control)] border border-rose-200 bg-rose-50 px-2 py-1.5 text-xs font-semibold text-rose-800 transition-colors hover:bg-rose-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-300 disabled:opacity-60"
                       onClick={() => handleDelete(banner)}
                       disabled={deletingId === banner._id}
                     >
@@ -305,202 +390,3 @@ export default function Banners() {
     </div>
   );
 }
-
-const styles = {
-  page: {
-    padding: "24px",
-    background: "#f3f4f6",
-    minHeight: "100vh",
-    fontFamily: "Inter, Arial, sans-serif",
-  },
-  header: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    marginBottom: "20px",
-  },
-  heading: { fontSize: "22px", fontWeight: 700, color: "#111827", margin: 0 },
-  subheading: { fontSize: "13px", color: "#6b7280", marginTop: "4px" },
-  createBtn: {
-    background: "#f0a500",
-    color: "#111",
-    fontWeight: 700,
-    border: "none",
-    borderRadius: "8px",
-    padding: "10px 18px",
-    fontSize: "14px",
-    cursor: "pointer",
-    whiteSpace: "nowrap",
-  },
-  toolbar: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: "16px",
-  },
-  filterGroup: {
-    display: "flex",
-    gap: "8px",
-    background: "#fff",
-    padding: "4px",
-    borderRadius: "8px",
-    border: "1px solid #e5e7eb",
-  },
-  filterBtn: {
-    border: "none",
-    background: "transparent",
-    padding: "6px 14px",
-    borderRadius: "6px",
-    fontSize: "13px",
-    fontWeight: 600,
-    color: "#6b7280",
-    cursor: "pointer",
-  },
-  filterBtnActive: {
-    background: "#111827",
-    color: "#fff",
-  },
-  countText: { fontSize: "13px", color: "#6b7280", fontWeight: 500 },
-  errorBox: {
-    background: "#fee2e2",
-    color: "#b91c1c",
-    padding: "10px 12px",
-    borderRadius: "6px",
-    fontSize: "13px",
-    marginBottom: "16px",
-  },
-  emptyState: {
-    background: "#fff",
-    borderRadius: "10px",
-    padding: "48px 24px",
-    textAlign: "center",
-    boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
-  },
-  grid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
-    gap: "20px",
-  },
-  card: {
-    background: "#fff",
-    borderRadius: "10px",
-    overflow: "hidden",
-    boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
-    display: "flex",
-    flexDirection: "column",
-  },
-  imageWrap: {
-    position: "relative",
-    width: "100%",
-    height: "160px",
-    background: "linear-gradient(135deg,#1f2937,#111827)",
-  },
-  image: { width: "100%", height: "100%", objectFit: "cover" },
-  imagePlaceholder: {
-    width: "100%",
-    height: "100%",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    color: "#9ca3af",
-    fontSize: "13px",
-  },
-  imageOverlay: {
-    position: "absolute",
-    top: "10px",
-    left: "10px",
-    right: "10px",
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-  },
-  discountBadge: {
-    background: "#cc0c39",
-    color: "#fff",
-    fontWeight: 700,
-    fontSize: "12px",
-    padding: "3px 8px",
-    borderRadius: "4px",
-  },
-  liveBadge: {
-    color: "#fff",
-    fontWeight: 600,
-    fontSize: "11px",
-    padding: "3px 8px",
-    borderRadius: "4px",
-  },
-  cardBody: {
-    padding: "16px",
-    display: "flex",
-    flexDirection: "column",
-    gap: "8px",
-    flex: 1,
-  },
-  cardTitle: {
-    fontSize: "15px",
-    fontWeight: 700,
-    color: "#111827",
-    margin: 0,
-  },
-  tagsRow: { display: "flex", gap: "6px", flexWrap: "wrap" },
-  tag: {
-    background: "#f3f4f6",
-    color: "#374151",
-    fontSize: "11px",
-    fontWeight: 600,
-    padding: "3px 8px",
-    borderRadius: "4px",
-  },
-  tagAlt: {
-    background: "#eef2ff",
-    color: "#4338ca",
-    fontSize: "11px",
-    fontWeight: 600,
-    padding: "3px 8px",
-    borderRadius: "4px",
-  },
-  metaLine: {
-    display: "flex",
-    justifyContent: "space-between",
-    fontSize: "12px",
-  },
-  metaKey: { color: "#6b7280", fontWeight: 600 },
-  metaVal: { color: "#111827", fontWeight: 500 },
-  cardActions: {
-    display: "flex",
-    gap: "8px",
-    marginTop: "8px",
-  },
-  toggleBtn: {
-    flex: 1,
-    background: "#fff",
-    border: "1px solid #d1d5db",
-    borderRadius: "6px",
-    padding: "8px",
-    fontSize: "12px",
-    fontWeight: 600,
-    cursor: "pointer",
-  },
-  editBtn: {
-    flex: 1,
-    background: "#111827",
-    color: "#fff",
-    border: "none",
-    borderRadius: "6px",
-    padding: "8px",
-    fontSize: "12px",
-    fontWeight: 600,
-    cursor: "pointer",
-  },
-  deleteBtn: {
-    flex: 1,
-    background: "#fef2f2",
-    color: "#b91c1c",
-    border: "1px solid #fecaca",
-    borderRadius: "6px",
-    padding: "8px",
-    fontSize: "12px",
-    fontWeight: 600,
-    cursor: "pointer",
-  },
-};

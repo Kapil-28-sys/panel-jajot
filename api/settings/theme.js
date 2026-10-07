@@ -1,116 +1,6 @@
 /**
  * Shared theme API  —  /api/settings/theme
  *
-<<<<<<< HEAD
- *   GET  -> { theme }            public (the login page needs it before anyone signs in)
- *   PUT  <- { theme }            needs a Bearer token (see THEME_WRITE_TOKENS below)
- *
- * One theme for everyone: it is stored once on the server, so a change saved by the Super Admin
- * shows up in every browser and on every device.
- *
- * Storage
- *   - On Vercel:   Vercel Blob (set up once: Vercel dashboard > Storage > Create > Blob > connect to this project).
- *                  Vercel then adds BLOB_READ_WRITE_TOKEN automatically. Both public and private stores work.
- *   - Local dev:   a plain file at .theme-data/theme.json (used by `npm run dev` through vite.config.js).
- *
- * Optional environment variables (Vercel > Settings > Environment Variables)
- *   THEME_WRITE_TOKENS  comma-separated Bearer tokens allowed to save. Default: "static-superadmin-token"
- *                       (the token the static Super Admin login produces). "*" = any signed-in token.
- *   AUTH_VERIFY_URL     a protected URL on your real backend; a token is also accepted when GET <url> with it returns 2xx.
- */
-import fs from "node:fs/promises";
-import path from "node:path";
-import { Buffer } from "node:buffer";
-import process from "node:process";
-
-const BLOB_PATH = "panel-theme/theme.json";
-const LOCAL_FILE = path.join(process.cwd(), ".theme-data", "theme.json");
-const MAX_BYTES = 4 * 1024 * 1024; // Vercel functions accept at most ~4.5 MB per request
-const WRITE_TOKENS = (process.env.THEME_WRITE_TOKENS || "static-superadmin-token")
-  .split(",").map((s) => s.trim()).filter(Boolean);
-const AUTH_VERIFY_URL = process.env.AUTH_VERIFY_URL || "";
-
-const hasBlob = () => Boolean(process.env.BLOB_READ_WRITE_TOKEN);
-const onVercel = () => Boolean(process.env.VERCEL);
-
-/* ---------------- storage ---------------- */
-
-async function readTheme() {
-  if (hasBlob()) {
-    const { get } = await import("@vercel/blob");
-    for (const access of ["private", "public"]) {
-      try {
-        const result = await get(BLOB_PATH, { access, useCache: false });
-        if (result?.stream) return JSON.parse(await new Response(result.stream).text());
-      } catch {
-        /* wrong store type, or nothing saved yet: try the other one */
-      }
-    }
-    return null;
-  }
-  if (onVercel()) return null; // no storage connected yet
-  try {
-    return JSON.parse(await fs.readFile(LOCAL_FILE, "utf8"));
-  } catch {
-    return null;
-  }
-}
-
-async function writeTheme(theme) {
-  const body = JSON.stringify(theme);
-  if (hasBlob()) {
-    const { put } = await import("@vercel/blob");
-    let lastError;
-    for (const access of ["private", "public"]) {
-      try {
-        await put(BLOB_PATH, body, {
-          access,
-          contentType: "application/json",
-          addRandomSuffix: false,
-          allowOverwrite: true,
-          cacheControlMaxAge: 60,
-        });
-        return;
-      } catch (e) {
-        lastError = e; // most likely the store is the other access type; try it
-      }
-    }
-    throw lastError;
-  }
-  if (onVercel()) {
-    const e = new Error(
-      "No storage is connected. In the Vercel dashboard open Storage > Create > Blob and connect it to this project, then redeploy."
-    );
-    e.status = 503;
-    throw e;
-  }
-  await fs.mkdir(path.dirname(LOCAL_FILE), { recursive: true });
-  const tmp = `${LOCAL_FILE}.${process.pid}.tmp`;
-  await fs.writeFile(tmp, body, "utf8");
-  await fs.rename(tmp, LOCAL_FILE);
-}
-
-/* ---------------- helpers ---------------- */
-
-const bearer = (req) => {
-  const m = /^Bearer\s+(.+)$/i.exec(req.headers?.authorization || "");
-  const t = m?.[1]?.trim();
-  return t && t !== "null" && t !== "undefined" ? t : "";
-};
-
-async function canWrite(token) {
-  if (!token) return false;
-  if (WRITE_TOKENS.includes("*") || WRITE_TOKENS.includes(token)) return true;
-  if (AUTH_VERIFY_URL) {
-    try {
-      const r = await fetch(AUTH_VERIFY_URL, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(6000) });
-      return r.ok;
-    } catch {
-      return false;
-    }
-  }
-  return false;
-=======
  * Super Admin theme (one for everyone):
  *   GET  -> { theme }                  public (the login page needs it)
  *   PUT  <- { theme }                  Super Admin only (the last 5 versions are kept)
@@ -172,18 +62,13 @@ async function canWriteVendor(token, vendorId) {
   if (!onVercel() && token === "local-admin-token") return true; // local dev only
   if (!AUTH_VERIFY_URL || !jwtIds(token).includes(String(vendorId))) return false;
   return verify(AUTH_VERIFY_URL, token);
->>>>>>> b77933a (scss used in this)
 }
 
 async function readJsonBody(req) {
   if (req.body !== undefined && req.body !== null) {
     if (Buffer.isBuffer(req.body)) return JSON.parse(req.body.toString("utf8"));
     if (typeof req.body === "string") return JSON.parse(req.body);
-<<<<<<< HEAD
-    return req.body; // already parsed by the platform
-=======
     return req.body;
->>>>>>> b77933a (scss used in this)
   }
   const chunks = [];
   let size = 0;
@@ -195,11 +80,6 @@ async function readJsonBody(req) {
   return JSON.parse(Buffer.concat(chunks).toString("utf8"));
 }
 
-<<<<<<< HEAD
-const isPlainObject = (v) => v !== null && typeof v === "object" && !Array.isArray(v);
-
-=======
->>>>>>> b77933a (scss used in this)
 const reply = (res, status, body) => {
   res.statusCode = status;
   res.setHeader("Content-Type", "application/json; charset=utf-8");
@@ -207,9 +87,6 @@ const reply = (res, status, body) => {
   res.end(JSON.stringify(body));
 };
 
-<<<<<<< HEAD
-/* ---------------- handler ---------------- */
-=======
 /** History keeps look-and-feel only: uploaded images (data URLs) are dropped so 5 versions stay small. */
 const stripImages = (v) =>
   typeof v === "string" ? (v.startsWith("data:") ? "" : v) : isPlainObject(v) ? Object.fromEntries(Object.entries(v).map(([k, x]) => [k, stripImages(x)])) : v;
@@ -288,7 +165,6 @@ async function handleVendor(req, res, vendorId) {
   const saved = await saveVendor(key, doc, Object.keys(override).length ? override : null);
   return reply(res, 200, { ok: true, revision: saved.revision, theme: saved.override });
 }
->>>>>>> b77933a (scss used in this)
 
 export default async function handler(req, res) {
   try {
@@ -297,18 +173,6 @@ export default async function handler(req, res) {
       res.setHeader("Allow", "GET,PUT,POST,OPTIONS");
       return res.end();
     }
-<<<<<<< HEAD
-
-    if (req.method === "GET" || req.method === "HEAD") {
-      return reply(res, 200, { theme: await readTheme() });
-    }
-
-    if (req.method === "PUT" || req.method === "POST") {
-      const token = bearer(req);
-      if (!token) return reply(res, 401, { message: "You are not signed in. Please sign in again and retry." });
-      if (!(await canWrite(token))) return reply(res, 403, { message: "This account is not allowed to change the theme." });
-
-=======
     const vendorId = new URL(req.url, "http://x").searchParams.get("vendor");
     if (vendorId) {
       if (!["GET", "HEAD", "PUT", "POST"].includes(req.method)) return reply(res, 405, { message: "Method not allowed." });
@@ -321,23 +185,10 @@ export default async function handler(req, res) {
       const token = bearer(req);
       if (!token) return reply(res, 401, { message: "You are not signed in. Please sign in again and retry." });
       if (!(await canWriteAdmin(token))) return reply(res, 403, { message: "This account is not allowed to change the theme." });
->>>>>>> b77933a (scss used in this)
       let payload;
       try {
         payload = await readJsonBody(req);
       } catch (e) {
-<<<<<<< HEAD
-        if (e.status === 413) return reply(res, 413, { message: e.message });
-        return reply(res, 400, { message: "The theme could not be read (invalid JSON)." });
-      }
-      const theme = payload?.theme ?? payload;
-      if (!isPlainObject(theme) || Object.keys(theme).length === 0) {
-        return reply(res, 422, { message: 'Expected { "theme": { ... } }.' });
-      }
-      if (JSON.stringify(theme).length > MAX_BYTES) return reply(res, 413, { message: "Theme is too large." });
-
-      await writeTheme(theme);
-=======
         return reply(res, e.status || 400, { message: e.status === 413 ? e.message : "The theme could not be read (invalid JSON)." });
       }
       if (payload?.restore === "previous") {
@@ -349,7 +200,6 @@ export default async function handler(req, res) {
       if (!isPlainObject(theme) || Object.keys(theme).length === 0) return reply(res, 422, { message: 'Expected { "theme": { ... } }.' });
       if (JSON.stringify(theme).length > MAX_BYTES) return reply(res, 413, { message: "Theme is too large." });
       await saveAdmin(theme);
->>>>>>> b77933a (scss used in this)
       return reply(res, 200, { ok: true });
     }
 

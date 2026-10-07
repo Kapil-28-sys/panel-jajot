@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
-import { Search, X, Compass, Camera, Radio, TestTube, BatteryCharging, FlaskConical } from "lucide-react";
+import { Search, X, Compass, Camera, Radio, TestTube, BatteryCharging, FlaskConical, Microscope, Layers, Store } from "lucide-react";
 
 /* =========================================================
    NO MOCK DATA — every call below hits the real API only.
@@ -478,23 +478,60 @@ export default function ProductResearchPage() {
       <header className="prp-top">
         <div className="prp-brand">
           <span className="prp-mark">Field Index</span>
-          <span className="prp-tag">RESEARCH PRODUCT PAGE</span>
         </div>
 
         <div className="prp-search-wrap">
           <div className="prp-search-box">
             <Search size={15} strokeWidth={2} />
             <input
-              placeholder="Search the catalog — instrument, SKU, vendor…"
+              placeholder="Search by product name, SKU, brand or vendor"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />
           </div>
           <span className={"prp-pill " + (usingLive ? "live" : "preview")}>
-            {usingLive ? "● connected to api" : "○ api unreachable"}
+            {usingLive ? "● Connected to API" : "○ API unreachable"}
           </span>
         </div>
       </header>
+
+      {/* Hero — same look as Dashboard / Inventory / Attributes */}
+      <section className="prp-hero">
+        <span className="prp-goldline prp-goldline-hero" />
+        <div className="prp-hero-text">
+          <p className="prp-hero-kicker">
+            <Microscope size={14} strokeWidth={1.6} />
+            Product research
+          </p>
+          <h2 className="prp-hero-title">Compare products before you decide</h2>
+          <p className="prp-hero-copy">
+            Search the catalog, narrow it by category, vendor, price and rating, then open any product to read its specifications and see similar items side by side.
+          </p>
+        </div>
+        <div className="prp-glance">
+          <div className="prp-glance-stat">
+            <Layers size={18} strokeWidth={1.5} />
+            <div>
+              <strong>{loading && !allProducts.length ? "—" : allProducts.length}</strong>
+              <span>products indexed</span>
+            </div>
+          </div>
+          <div className="prp-glance-stat">
+            <Compass size={18} strokeWidth={1.5} />
+            <div>
+              <strong>{categories.length || "—"}</strong>
+              <span>categories</span>
+            </div>
+          </div>
+          <div className="prp-glance-stat">
+            <Store size={18} strokeWidth={1.5} />
+            <div>
+              <strong>{vendors.length || "—"}</strong>
+              <span>vendors</span>
+            </div>
+          </div>
+        </div>
+      </section>
 
       <div className="prp-grid-shell">
         <aside className="prp-filters">
@@ -533,15 +570,15 @@ export default function ProductResearchPage() {
           </div>
 
           <div className="prp-fblock">
-            <h3>Inventory</h3>
+            <h3>Availability</h3>
             <div className={"prp-toggle" + (inventoryOnly ? " on" : "")} onClick={toggleInventory}>
-              <span>In-stock only (selected vendor)</span>
+              <span>In stock only (selected vendor)</span>
               <span className="prp-switch" />
             </div>
           </div>
 
           <div className="prp-fblock">
-            <h3>Advanced Filters</h3>
+            <h3>Price & rating</h3>
             <div className="prp-range-row">
               <span className="prp-range-label">Max</span>
               <input
@@ -552,7 +589,7 @@ export default function ProductResearchPage() {
                 value={maxPrice}
                 onChange={(e) => setMaxPrice(Number(e.target.value))}
               />
-              <span className="prp-range-val">${maxPrice}</span>
+              <span className="prp-range-val">₹{maxPrice}</span>
             </div>
             <select value={minRating} onChange={(e) => setMinRating(e.target.value)} style={{ marginTop: 10, marginBottom: 10 }}>
               <option value="0">Any rating</option>
@@ -561,10 +598,10 @@ export default function ProductResearchPage() {
               <option value="4.5">4.5★ and up</option>
             </select>
             <button className="prp-apply-btn" onClick={applyAdvanced}>
-              Apply Filters
+              Apply filters
             </button>
             <button className="prp-clear-btn" onClick={clearAll}>
-              Clear all
+              Reset all filters
             </button>
           </div>
         </aside>
@@ -576,7 +613,7 @@ export default function ProductResearchPage() {
               <div className="prp-sub">{sub}</div>
             </div>
             <div className="prp-sort-row">
-              Sort
+              Sort by
               <select value={sort} onChange={(e) => setSort(e.target.value)}>
                 <option value="relevance">Relevance</option>
                 <option value="price-asc">Price: low to high</option>
@@ -587,7 +624,7 @@ export default function ProductResearchPage() {
           </div>
 
           {loading ? (
-            <LoadingRow label="fetching results…" />
+            <LoadingRow label="Fetching results…" />
           ) : error ? (
             <div className="prp-empty">
               <Search size={30} strokeWidth={1.6} />
@@ -601,7 +638,7 @@ export default function ProductResearchPage() {
             <div className="prp-empty">
               <Search size={30} strokeWidth={1.6} />
               <div>No products match these filters.</div>
-              <div className="prp-empty-sub">Try widening the price range or clearing a filter.</div>
+              <div className="prp-empty-sub">Try widening the price range or resetting a filter.</div>
             </div>
           ) : (
             <div className="prp-cardgrid">
@@ -642,12 +679,12 @@ export default function ProductResearchPage() {
                 <Search size={30} strokeWidth={1.6} />
                 <div>Couldn't load this product from the API.</div>
                 <div className="prp-empty-sub">{modalError}</div>
-                <button className="prp-close-btn" style={{ margin: "16px auto 0" }} onClick={closeModal}>
+                <button className="prp-close-btn" style={{ margin: "16px auto 0" }} onClick={closeModal} aria-label="Close">
                   <X size={15} />
                 </button>
               </div>
             ) : !selectedProduct ? (
-              <LoadingRow label="loading spec sheet…" padded />
+              <LoadingRow label="Loading specifications…" padded />
             ) : (
               <ModalBody product={selectedProduct} recs={recs} categories={categories} onClose={closeModal} onOpen={openProduct} />
             )}
@@ -675,6 +712,7 @@ function ModalBody({ product: p, recs, categories, onClose, onOpen }) {
   const specEntries = p.specs && typeof p.specs === "object" ? Object.entries(p.specs) : [];
   return (
     <>
+      <span className="prp-goldline prp-goldline-modal" />
       <div className="prp-modal-head">
         <div>
           <div className="prp-modal-sku">{p.sku}</div>
@@ -683,7 +721,7 @@ function ModalBody({ product: p, recs, categories, onClose, onOpen }) {
             {p.vendor} · <span className={"prp-stock " + st.cls} style={{ marginLeft: 4 }}>{st.text}</span>
           </div>
         </div>
-        <button className="prp-close-btn" onClick={onClose}>
+        <button className="prp-close-btn" onClick={onClose} aria-label="Close">
           <X size={15} />
         </button>
       </div>
@@ -703,6 +741,7 @@ function ModalBody({ product: p, recs, categories, onClose, onOpen }) {
             ))}
           </ul>
         )}
+        <h3 className="prp-section-h">Specifications</h3>
         <table className="prp-spec-table">
           <tbody>
             {specEntries.map(([k, v]) => (
@@ -729,11 +768,11 @@ function ModalBody({ product: p, recs, categories, onClose, onOpen }) {
         </div>
 
         <div className="prp-rec-section">
-          <h3>Recommended alongside this item</h3>
+          <h3 className="prp-section-h">Compare with similar products</h3>
           {recs === null ? (
-            <LoadingRow label="finding related items…" />
+            <LoadingRow label="Finding similar products…" />
           ) : recs.length === 0 ? (
-            <div className="prp-empty-sub" style={{ textAlign: "left" }}>No related items found.</div>
+            <div className="prp-empty-sub" style={{ textAlign: "left" }}>No similar products found.</div>
           ) : (
             <div className="prp-rec-grid">
               {recs.map((r) => (
@@ -751,128 +790,158 @@ function ModalBody({ product: p, recs, categories, onClose, onOpen }) {
 }
 
 /* =========================================================
-   LIGHT THEME — paper/sage palette, forest-green accent
+   THEME — driven by the same CSS variables as Dashboard,
+   Inventory and Attributes (--brand, --hero-*, --tint-*, etc.).
+   Fallback values are used only if a variable isn't defined.
    ========================================================= */
 const CSS = `
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
-
 .prp-root{
-  --bg:#f5f6f1; --surface:#ffffff; --surface-sunken:#eef1ea; --border:#dde2d8; --border-soft:#e7ebe2;
-  --ink:#20291f; --ink-dim:#5c6a58; --ink-faint:#94a08e;
-  --accent:#2f6f4f; --accent-soft:#e3efe6; --accent-dim:#a9c9b6;
-  --amber:#b9762c; --amber-soft:#f6ead9;
-  --rust:#b8493d; --rust-soft:#f6e1de;
-  --teal-soft:#e1f0e8;
-  font-family:'Inter',sans-serif; color:var(--ink); background:var(--bg);
+  --accent: rgb(var(--brand, 180 120 20));
+  --accent-dark: rgb(var(--brand-dark, 140 90 10));
+  --accent-text: rgb(var(--brand-text, 140 90 10));
+  --accent-soft: rgb(var(--tint-100, 250 243 224));
+  --accent-dim: rgb(var(--brand-line, 200 160 80) / 0.55);
+  --line: rgb(var(--brand-line, 200 160 80));
+  --bg: rgb(var(--page-bg, 247 245 240));
+  --surface:#ffffff; --surface-sunken:#f7f5f0; --border:#e7e5e4; --border-soft:#f1efec;
+  --ink:#0f172a; --ink-dim:#475569; --ink-faint:#94a3b8;
+  --amber:#92400e; --amber-soft:#fef3c7;
+  --rust:#9f1239; --rust-soft:#ffe4e6;
+  --ok:#065f46; --ok-soft:#d1fae5;
+  --radius-c: var(--radius-card, 14px); --radius-k: var(--radius-control, 8px);
+  --display: var(--font-display, Georgia, serif);
+  color:var(--ink); background:var(--bg);
   min-height:100vh; display:flex; flex-direction:column;
 }
 .prp-root *{ box-sizing:border-box; }
-.prp-root select, .prp-root input{ font-family:inherit; }
+.prp-root select, .prp-root input, .prp-root button{ font-family:inherit; }
+.prp-root button:focus-visible, .prp-root select:focus-visible, .prp-frow:focus-visible{ outline:2px solid var(--line); outline-offset:2px; }
 
-.prp-top{ display:flex; align-items:center; gap:24px; padding:18px 28px; background:var(--surface); border-bottom:1px solid var(--border); position:sticky; top:0; z-index:40; }
-.prp-brand{ display:flex; align-items:baseline; gap:10px; white-space:nowrap; }
-.prp-mark{ font-family:'Fraunces',serif; font-weight:600; font-size:22px; }
-.prp-tag{ font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--accent); border:1px solid var(--accent-dim); background:var(--accent-soft); padding:2px 6px; border-radius:2px; letter-spacing:.06em; }
+.prp-goldline{ position:absolute; top:0; height:1px; pointer-events:none; background:linear-gradient(to right, transparent, var(--line), transparent); }
+.prp-goldline-hero{ left:64px; right:64px; }
+.prp-goldline-modal{ left:32px; right:32px; z-index:1; }
+
+.prp-top{ display:flex; align-items:center; gap:24px; padding:14px 28px; background:var(--surface); border-bottom:1px solid var(--border); position:sticky; top:0; z-index:40; }
+.prp-brand{ white-space:nowrap; }
+.prp-mark{ font-family:var(--display); font-weight:600; font-size:22px; }
 .prp-search-wrap{ flex:1; display:flex; align-items:center; gap:10px; max-width:640px; }
-.prp-search-box{ flex:1; display:flex; align-items:center; gap:8px; background:var(--surface-sunken); border:1px solid var(--border); border-radius:4px; padding:9px 12px; color:var(--ink-faint); }
-.prp-search-box:focus-within{ border-color:var(--accent-dim); background:var(--surface); }
-.prp-search-box input{ flex:1; background:transparent; border:none; outline:none; color:var(--ink); font-family:'IBM Plex Mono',monospace; font-size:13px; }
+.prp-search-box{ flex:1; display:flex; align-items:center; gap:8px; background:var(--surface); border:1px solid #d6d3d1; border-radius:var(--radius-k); padding:9px 12px; color:var(--ink-faint); transition:border-color .15s; }
+.prp-search-box:focus-within{ border-color:var(--accent); box-shadow:0 0 0 1px var(--accent); }
+.prp-search-box input{ flex:1; background:transparent; border:none; outline:none; color:var(--ink); font-size:13.5px; }
 .prp-search-box input::placeholder{ color:var(--ink-faint); }
-.prp-pill{ font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.05em; padding:5px 9px; border-radius:20px; border:1px solid var(--border); color:var(--ink-dim); white-space:nowrap; }
-.prp-pill.live{ color:var(--accent); border-color:var(--accent-dim); background:var(--accent-soft); }
-.prp-pill.preview{ color:var(--amber); border-color:#e0c398; background:var(--amber-soft); }
+.prp-pill{ font-size:11.5px; font-weight:500; padding:5px 10px; border-radius:var(--radius-k); border:1px solid var(--border); color:var(--ink-dim); white-space:nowrap; }
+.prp-pill.live{ color:var(--ok); border-color:#a7f3d0; background:var(--ok-soft); }
+.prp-pill.preview{ color:var(--amber); border-color:#fcd34d; background:var(--amber-soft); }
+
+.prp-hero{ position:relative; overflow:hidden; display:flex; align-items:flex-end; justify-content:space-between; gap:28px; flex-wrap:wrap; max-width:1400px; width:calc(100% - 56px); margin:20px auto 0; padding:32px 36px; border-radius:var(--radius-c); background:linear-gradient(135deg, rgb(var(--hero-a, 253 248 235)), rgb(var(--hero-b, 250 240 215)), rgb(var(--hero-c, 247 232 195))); box-shadow:0 0 0 1px rgb(var(--brand-line, 200 160 80) / 0.4); }
+.prp-hero-text{ max-width:620px; }
+.prp-hero-kicker{ display:inline-flex; align-items:center; gap:8px; margin:0; font-size:13.5px; font-weight:500; color:var(--accent-dark); }
+.prp-hero-title{ margin:8px 0 0; font-family:var(--display); font-weight:600; font-size:32px; line-height:1.12; letter-spacing:-0.01em; color:var(--ink); }
+.prp-hero-copy{ margin:10px 0 0; font-size:13.5px; line-height:1.6; color:#475569; }
+.prp-glance{ display:flex; }
+.prp-glance-stat{ display:flex; align-items:center; gap:12px; padding:0 20px; border-left:1px solid rgb(var(--brand-line, 200 160 80) / 0.4); color:var(--accent-text); }
+.prp-glance-stat:first-child{ padding-left:0; border-left:none; }
+.prp-glance-stat:last-child{ padding-right:0; }
+.prp-glance-stat strong{ display:block; font-family:var(--display); font-size:26px; line-height:1; font-weight:600; color:var(--ink); font-variant-numeric:tabular-nums; }
+.prp-glance-stat span{ display:block; margin-top:4px; font-size:12px; color:#64748b; }
 
 .prp-grid-shell{ flex:1; display:grid; grid-template-columns:260px 1fr; max-width:1400px; width:100%; margin:0 auto; }
-.prp-filters{ border-right:1px solid var(--border); padding:22px 20px 60px; }
+.prp-filters{ border-right:1px solid var(--border); padding:24px 20px 60px 28px; }
 .prp-fblock{ margin-bottom:26px; }
-.prp-fblock h3{ font-family:'IBM Plex Mono',monospace; font-size:10.5px; letter-spacing:.09em; text-transform:uppercase; color:var(--ink-faint); margin:0 0 10px; }
+.prp-fblock h3{ font-size:13px; font-weight:600; color:var(--ink); margin:0 0 10px; }
 .prp-flist{ display:flex; flex-direction:column; gap:2px; }
-.prp-frow{ display:flex; align-items:center; justify-content:space-between; gap:8px; padding:6px 8px; border-radius:4px; cursor:pointer; font-size:13px; color:var(--ink-dim); border:1px solid transparent; }
+.prp-frow{ display:flex; align-items:center; justify-content:space-between; gap:8px; padding:7px 9px; border-radius:var(--radius-k); cursor:pointer; font-size:13px; color:var(--ink-dim); border:1px solid transparent; transition:background .15s, color .15s; }
 .prp-frow:hover{ background:var(--surface-sunken); color:var(--ink); }
-.prp-frow.active{ background:var(--accent-soft); color:var(--accent); border-color:var(--accent-dim); font-weight:600; }
-.prp-count{ font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:var(--ink-faint); }
-.prp-frow.active .prp-count{ color:var(--accent); }
+.prp-frow.active{ background:var(--accent-soft); color:var(--accent-text); border-color:var(--accent-dim); font-weight:600; }
+.prp-count{ font-size:11.5px; color:var(--ink-faint); font-variant-numeric:tabular-nums; }
+.prp-frow.active .prp-count{ color:var(--accent-text); }
 .prp-range-row{ display:flex; align-items:center; gap:8px; }
 .prp-range-row input[type=range]{ flex:1; accent-color:var(--accent); }
-.prp-range-label{ font-size:11.5px; color:var(--ink-faint); width:34px; }
-.prp-range-val{ font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--ink-dim); width:52px; text-align:right; }
-.prp-root select{ width:100%; background:var(--surface); border:1px solid var(--border); color:var(--ink); border-radius:4px; padding:8px 10px; font-size:13px; }
-.prp-toggle{ display:flex; align-items:center; justify-content:space-between; cursor:pointer; background:var(--surface); border:1px solid var(--border); border-radius:4px; padding:9px 10px; font-size:13px; color:var(--ink-dim); }
-.prp-switch{ width:32px; height:18px; border-radius:20px; background:var(--border); position:relative; flex-shrink:0; transition:background .15s; }
+.prp-range-label{ font-size:12px; color:var(--ink-faint); width:30px; }
+.prp-range-val{ font-size:12px; color:var(--ink-dim); width:58px; text-align:right; font-variant-numeric:tabular-nums; }
+.prp-root select{ width:100%; background:var(--surface); border:1px solid #d6d3d1; color:var(--ink); border-radius:var(--radius-k); padding:8px 10px; font-size:13px; }
+.prp-root select:focus{ outline:none; border-color:var(--accent); box-shadow:0 0 0 1px var(--accent); }
+.prp-toggle{ display:flex; align-items:center; justify-content:space-between; gap:10px; cursor:pointer; background:var(--surface); border:1px solid #d6d3d1; border-radius:var(--radius-k); padding:9px 10px; font-size:13px; color:var(--ink-dim); }
+.prp-switch{ width:32px; height:18px; border-radius:20px; background:#d6d3d1; position:relative; flex-shrink:0; transition:background .15s; }
 .prp-switch::after{ content:''; position:absolute; top:2px; left:2px; width:14px; height:14px; border-radius:50%; background:#fff; box-shadow:0 1px 2px rgba(0,0,0,.2); transition:left .15s; }
-.prp-toggle.on{ border-color:var(--accent-dim); color:var(--accent); }
+.prp-toggle.on{ border-color:var(--accent-dim); color:var(--accent-text); }
 .prp-toggle.on .prp-switch{ background:var(--accent); }
 .prp-toggle.on .prp-switch::after{ left:16px; }
-.prp-apply-btn{ width:100%; background:var(--accent); color:#fff; border:none; border-radius:4px; padding:10px; font-weight:600; font-size:12.5px; letter-spacing:.03em; cursor:pointer; margin-top:10px; }
-.prp-apply-btn:hover{ filter:brightness(1.08); }
-.prp-clear-btn{ width:100%; background:transparent; color:var(--ink-faint); border:1px solid var(--border-soft); border-radius:4px; padding:8px; font-size:11.5px; cursor:pointer; margin-top:8px; }
+.prp-apply-btn{ width:100%; background:linear-gradient(135deg, var(--accent), var(--accent-dark)); color:#fff; border:none; border-radius:var(--radius-k); padding:10px; font-weight:600; font-size:13px; cursor:pointer; margin-top:10px; transition:opacity .15s; }
+.prp-apply-btn:hover{ opacity:.9; }
+.prp-clear-btn{ width:100%; background:var(--surface); color:var(--ink-dim); border:1px solid #d6d3d1; border-radius:var(--radius-k); padding:8px; font-size:12.5px; cursor:pointer; margin-top:8px; transition:color .15s, border-color .15s; }
 .prp-clear-btn:hover{ color:var(--rust); border-color:var(--rust); }
 
 .prp-main{ padding:24px 28px 80px; }
 .prp-main-head{ display:flex; align-items:baseline; justify-content:space-between; margin-bottom:18px; flex-wrap:wrap; gap:10px; }
-.prp-main-head h1{ font-family:'Fraunces',serif; font-weight:500; font-size:20px; margin:0; }
-.prp-sub{ font-family:'IBM Plex Mono',monospace; font-size:11.5px; color:var(--ink-faint); }
-.prp-sort-row{ display:flex; align-items:center; gap:8px; font-size:12px; color:var(--ink-dim); }
-.prp-sort-row select{ width:auto; padding:6px 8px; font-size:12px; }
+.prp-main-head h1{ font-family:var(--display); font-weight:600; font-size:22px; margin:0; }
+.prp-sub{ font-size:12.5px; color:var(--ink-dim); margin-top:2px; font-variant-numeric:tabular-nums; }
+.prp-sort-row{ display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--ink-dim); }
+.prp-sort-row select{ width:auto; padding:6px 8px; font-size:12.5px; }
 
-.prp-cardgrid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:14px; }
-.prp-card{ background:var(--surface); border:1px solid var(--border); border-radius:6px; cursor:pointer; overflow:hidden; display:flex; flex-direction:column; transition:border-color .15s, transform .15s, box-shadow .15s; }
-.prp-card:hover{ border-color:var(--accent-dim); transform:translateY(-2px); box-shadow:0 6px 16px rgba(47,111,79,.10); }
-.prp-card-icon{ height:104px; display:flex; align-items:center; justify-content:center; background:var(--surface-sunken); border-bottom:1px solid var(--border-soft); color:var(--accent-dim); overflow:hidden; }
+.prp-cardgrid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:16px; }
+.prp-card{ position:relative; background:var(--surface); box-shadow:0 0 0 1px #e7e5e4; border-radius:var(--radius-c); cursor:pointer; overflow:hidden; display:flex; flex-direction:column; transition:box-shadow .15s; }
+.prp-card:hover{ box-shadow:0 0 0 1px var(--accent-dim), 0 6px 16px rgba(15,23,42,.07); }
+.prp-card-icon{ height:112px; display:flex; align-items:center; justify-content:center; background:var(--surface-sunken); border-bottom:1px solid var(--border-soft); color:var(--accent-dim); overflow:hidden; }
 .prp-card-img{ width:100%; height:100%; object-fit:cover; }
-.prp-card-body{ padding:12px 14px 14px; display:flex; flex-direction:column; gap:6px; flex:1; }
-.prp-card-sku{ font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--ink-faint); letter-spacing:.04em; }
-.prp-card-title{ font-size:14px; font-weight:600; line-height:1.3; }
-.prp-card-vendor{ font-size:11.5px; color:var(--ink-dim); }
-.prp-card-foot{ display:flex; align-items:center; justify-content:space-between; margin-top:auto; padding-top:6px; }
-.prp-card-price{ font-family:'IBM Plex Mono',monospace; font-size:14px; color:var(--accent); font-weight:600; }
-.prp-stock{ font-family:'IBM Plex Mono',monospace; font-size:9.5px; letter-spacing:.05em; padding:3px 6px; border-radius:3px; text-transform:uppercase; }
-.prp-stock.in{ background:var(--teal-soft); color:var(--accent); }
+.prp-card-body{ padding:12px 14px 14px; display:flex; flex-direction:column; gap:5px; flex:1; }
+.prp-card-sku{ font-size:11px; color:var(--ink-faint); }
+.prp-card-title{ font-size:14px; font-weight:600; line-height:1.3; color:var(--ink); }
+.prp-card-vendor{ font-size:12px; color:var(--ink-dim); }
+.prp-card-foot{ display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:auto; padding-top:8px; }
+.prp-card-price{ font-family:var(--display); font-size:17px; color:var(--accent-text); font-weight:600; font-variant-numeric:tabular-nums; }
+.prp-stock{ font-size:11px; font-weight:500; padding:2px 7px; border-radius:var(--radius-k); }
+.prp-stock.in{ background:var(--ok-soft); color:var(--ok); }
 .prp-stock.low{ background:var(--amber-soft); color:var(--amber); }
 .prp-stock.out{ background:var(--rust-soft); color:var(--rust); }
 
-.prp-empty{ text-align:center; padding:70px 20px; color:var(--ink-faint); }
-.prp-empty svg{ margin-bottom:12px; opacity:.5; }
-.prp-empty-sub{ font-size:12px; margin-top:4px; }
-.prp-loading{ display:flex; align-items:center; gap:10px; color:var(--ink-faint); font-family:'IBM Plex Mono',monospace; font-size:12px; padding:30px 0; }
+.prp-empty{ text-align:center; padding:70px 20px; color:var(--ink-dim); }
+.prp-empty svg{ margin-bottom:12px; opacity:.45; }
+.prp-empty-sub{ font-size:12.5px; margin-top:4px; color:var(--ink-faint); }
+.prp-loading{ display:flex; align-items:center; gap:10px; color:var(--ink-dim); font-size:13px; padding:30px 0; }
 .prp-dot{ width:6px; height:6px; border-radius:50%; background:var(--accent); animation:prp-pulse 1s infinite ease-in-out; }
 .prp-dot:nth-child(2){ animation-delay:.15s; } .prp-dot:nth-child(3){ animation-delay:.3s; }
 @keyframes prp-pulse{ 0%,80%,100%{opacity:.25;} 40%{opacity:1;} }
+@media (prefers-reduced-motion: reduce){ .prp-dot{ animation:none; opacity:.6; } .prp-card, .prp-switch, .prp-switch::after{ transition:none; } }
 
-.prp-overlay{ position:fixed; inset:0; background:rgba(32,41,31,.35); backdrop-filter:blur(2px); display:flex; align-items:flex-start; justify-content:center; z-index:100; padding:40px 20px; overflow-y:auto; }
-.prp-modal{ background:var(--surface); border:1px solid var(--border); border-radius:8px; max-width:780px; width:100%; box-shadow:0 20px 50px rgba(32,41,31,.18); }
-.prp-modal-head{ display:flex; justify-content:space-between; align-items:flex-start; padding:22px 26px; border-bottom:1px solid var(--border); gap:16px; }
-.prp-modal-sku{ font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--accent); letter-spacing:.05em; margin-bottom:6px; }
-.prp-modal-head h2{ font-family:'Fraunces',serif; font-weight:500; font-size:22px; margin:0 0 6px; }
+.prp-overlay{ position:fixed; inset:0; background:rgba(15,23,42,.4); backdrop-filter:blur(2px); display:flex; align-items:flex-start; justify-content:center; z-index:100; padding:40px 20px; overflow-y:auto; }
+.prp-modal{ position:relative; overflow:hidden; background:var(--surface); border-radius:var(--radius-c); max-width:780px; width:100%; box-shadow:0 0 0 1px rgb(var(--brand-line, 200 160 80) / 0.4), 0 20px 50px rgba(15,23,42,.2); }
+.prp-modal-head{ display:flex; justify-content:space-between; align-items:flex-start; padding:22px 26px; border-bottom:1px solid var(--border); gap:16px; background:linear-gradient(135deg, rgb(var(--hero-a, 253 248 235)), rgb(var(--hero-b, 250 240 215)), rgb(var(--hero-c, 247 232 195))); }
+.prp-modal-sku{ font-size:12px; color:var(--accent-text); font-weight:500; margin-bottom:6px; }
+.prp-modal-head h2{ font-family:var(--display); font-weight:600; font-size:24px; margin:0 0 6px; line-height:1.15; }
 .prp-modal-vendor{ color:var(--ink-dim); font-size:13px; }
-.prp-close-btn{ background:var(--surface-sunken); border:1px solid var(--border); color:var(--ink-dim); width:30px; height:30px; border-radius:50%; cursor:pointer; flex-shrink:0; display:flex; align-items:center; justify-content:center; }
+.prp-close-btn{ background:rgba(255,255,255,.7); border:1px solid #d6d3d1; color:var(--ink-dim); width:30px; height:30px; border-radius:var(--radius-k); cursor:pointer; flex-shrink:0; display:flex; align-items:center; justify-content:center; transition:color .15s, border-color .15s; }
 .prp-close-btn:hover{ border-color:var(--rust); color:var(--rust); }
 .prp-modal-body{ padding:22px 26px; }
-.prp-modal-icon{ float:right; width:96px; height:96px; margin-left:16px; margin-bottom:10px; background:var(--surface-sunken); border:1px solid var(--border-soft); border-radius:6px; display:flex; align-items:center; justify-content:center; color:var(--accent-dim); overflow:hidden; }
+.prp-modal-icon{ float:right; width:96px; height:96px; margin-left:16px; margin-bottom:10px; background:var(--surface-sunken); border:1px solid var(--border); border-radius:var(--radius-k); display:flex; align-items:center; justify-content:center; color:var(--accent-dim); overflow:hidden; }
 .prp-modal-img{ width:100%; height:100%; object-fit:cover; }
-.prp-modal-bullets{ margin:0 0 18px; padding-left:18px; color:var(--ink-dim); font-size:13px; line-height:1.7; }
-.prp-modal-desc{ color:var(--ink-dim); font-size:13.5px; line-height:1.6; margin:0 0 18px; }
+.prp-modal-bullets{ margin:0 0 18px; padding-left:18px; color:var(--ink-dim); font-size:13.5px; line-height:1.7; }
+.prp-modal-desc{ color:var(--ink-dim); font-size:14px; line-height:1.65; margin:0 0 18px; max-width:62ch; }
+.prp-section-h{ font-family:var(--display); font-size:17px; font-weight:600; color:var(--ink); margin:0 0 8px; clear:both; }
 .prp-spec-table{ width:100%; border-collapse:collapse; margin-bottom:18px; }
 .prp-spec-table tr{ border-bottom:1px solid var(--border-soft); }
-.prp-spec-table td{ padding:8px 0; font-size:12.5px; }
-.prp-spec-table td:first-child{ color:var(--ink-faint); font-family:'IBM Plex Mono',monospace; width:40%; }
+.prp-spec-table td{ padding:8px 0; font-size:13px; color:var(--ink); }
+.prp-spec-table td:first-child{ color:var(--ink-dim); width:40%; }
 .prp-modal-buy{ display:flex; align-items:center; justify-content:space-between; padding:16px 0 4px; border-top:1px solid var(--border); margin-top:6px; }
-.prp-modal-price{ font-family:'IBM Plex Mono',monospace; font-size:22px; color:var(--accent); font-weight:600; }
-.prp-modal-cta{ background:var(--accent); color:#fff; border:none; padding:11px 18px; border-radius:5px; font-weight:600; font-size:13px; cursor:pointer; }
-.prp-modal-cta:hover{ filter:brightness(1.08); }
+.prp-modal-price{ font-family:var(--display); font-size:26px; color:var(--accent-text); font-weight:600; font-variant-numeric:tabular-nums; }
+.prp-modal-cta{ background:linear-gradient(135deg, var(--accent), var(--accent-dark)); color:#fff; border:none; padding:11px 18px; border-radius:var(--radius-k); font-weight:600; font-size:13px; cursor:pointer; transition:opacity .15s; }
+.prp-modal-cta:hover{ opacity:.9; }
 .prp-rec-section{ margin-top:26px; padding-top:20px; border-top:1px solid var(--border); clear:both; }
-.prp-rec-section h3{ font-family:'IBM Plex Mono',monospace; font-size:10.5px; letter-spacing:.09em; text-transform:uppercase; color:var(--ink-faint); margin:0 0 12px; }
-.prp-rec-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
-.prp-rec-card{ border:1px solid var(--border); border-radius:5px; padding:10px; cursor:pointer; background:var(--surface-sunken); }
+.prp-rec-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:12px; }
+.prp-rec-card{ border:1px solid var(--border); border-radius:var(--radius-k); padding:10px 12px; cursor:pointer; background:var(--surface-sunken); transition:border-color .15s; }
 .prp-rec-card:hover{ border-color:var(--accent-dim); }
-.prp-rec-title{ font-size:12px; font-weight:600; margin-bottom:4px; line-height:1.3; }
-.prp-rec-price{ font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--accent); }
+.prp-rec-title{ font-size:12.5px; font-weight:600; margin-bottom:4px; line-height:1.3; }
+.prp-rec-price{ font-size:13px; color:var(--accent-text); font-weight:600; font-variant-numeric:tabular-nums; }
 
 @media (max-width: 860px){
   .prp-grid-shell{ grid-template-columns:1fr; }
-  .prp-filters{ border-right:none; border-bottom:1px solid var(--border); }
+  .prp-filters{ border-right:none; border-bottom:1px solid var(--border); padding:20px; }
   .prp-search-wrap{ order:3; width:100%; max-width:none; }
   .prp-top{ flex-wrap:wrap; }
   .prp-rec-grid{ grid-template-columns:1fr; }
+  .prp-hero{ width:calc(100% - 32px); padding:24px 20px; }
+  .prp-hero-title{ font-size:26px; }
+  .prp-glance{ flex-wrap:wrap; row-gap:14px; }
+  .prp-main{ padding:20px 16px 60px; }
 }
-`;
+`; 

@@ -1,28 +1,78 @@
 import { useEffect, useMemo, useState } from "react";
-import { CheckCircle2, Eye, Loader2, RotateCcw, Search, Timer, Truck, X } from "lucide-react";
+import {
+  CheckCircle2,
+  ClipboardList,
+  Eye,
+  Gem,
+  Loader2,
+  RotateCcw,
+  RotateCw,
+  Search,
+  Timer,
+  Truck,
+  X,
+} from "lucide-react";
 import DataPager from "../../components/common/DataPager";
-import MetricCard from "../../components/common/MetricCard";
 
 const inr = (value) =>
   new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(value || 0);
 
+/* ---------- design tokens (same CSS variables as the Dashboard) ---------- */
+
+const serif = { fontFamily: "var(--font-display)" };
+const gold = "text-[rgb(var(--brand-on-dark))]";
+
+const palettes = {
+  Pending: {
+    front: "from-[rgb(var(--tint-100))] via-[rgb(var(--tint-200))] to-[rgb(var(--tint-300))]",
+    back: "from-[rgb(var(--p4-b1))] to-[rgb(var(--p4-b2))]",
+    chip: "from-[rgb(var(--brand))] to-[rgb(var(--brand-dark))]",
+  },
+  Shipped: {
+    front: "from-[rgb(var(--a2-f1))] via-[rgb(var(--a2-f2))] to-[rgb(var(--a2-f3))]",
+    back: "from-[rgb(var(--a2-b1))] to-[rgb(var(--a2-b2))]",
+    chip: "from-[rgb(var(--a2))] to-[rgb(var(--a2-dark))]",
+  },
+  Delivered: {
+    front: "from-[rgb(var(--a1-f1))] via-[rgb(var(--a1-f2))] to-[rgb(var(--a1-f3))]",
+    back: "from-[rgb(var(--a1-b1))] to-[rgb(var(--a1-b2))]",
+    chip: "from-[rgb(var(--a1))] to-[rgb(var(--a1-dark))]",
+  },
+  Returned: {
+    front: "from-[rgb(var(--a3-f1))] via-[rgb(var(--a3-f2))] to-[rgb(var(--a3-f3))]",
+    back: "from-[rgb(var(--a3-b1))] to-[rgb(var(--a3-b2))]",
+    chip: "from-[rgb(var(--a3))] to-[rgb(var(--a3-dark))]",
+  },
+};
+
+const statusMeta = [
+  { status: "Pending", icon: Timer, helper: "waiting to be packed" },
+  { status: "Shipped", icon: Truck, helper: "on the way to customers" },
+  { status: "Delivered", icon: CheckCircle2, helper: "completed orders" },
+  { status: "Returned", icon: RotateCcw, helper: "sent back by customers" },
+];
+
+const fallbackBadge = "bg-stone-50 text-stone-700 ring-stone-200";
+
 const statusClass = {
-  Delivered: "bg-emerald-50 text-emerald-700 ring-emerald-200",
-  Shipped: "bg-sky-50 text-sky-700 ring-sky-200",
-  Pending: "bg-amber-50 text-amber-700 ring-amber-200",
-  Returned: "bg-red-50 text-red-700 ring-red-200",
-  Cancelled: "bg-slate-50 text-ink-800 ring-slate-200",
+  Delivered: "bg-emerald-50 text-emerald-800 ring-emerald-200",
+  Shipped: "bg-sky-50 text-sky-800 ring-sky-200",
+  Pending: "bg-amber-50 text-amber-800 ring-amber-200",
+  Returned: "bg-rose-50 text-rose-800 ring-rose-200",
+  Cancelled: fallbackBadge,
 };
 
 const paymentStatusClass = {
-  Paid: "bg-emerald-50 text-emerald-700 ring-emerald-200",
-  Pending: "bg-amber-50 text-amber-700 ring-amber-200",
-  Failed: "bg-red-50 text-red-700 ring-red-200",
-  Refunded: "bg-slate-50 text-ink-800 ring-slate-200",
+  Paid: "bg-emerald-50 text-emerald-800 ring-emerald-200",
+  Pending: "bg-amber-50 text-amber-800 ring-amber-200",
+  Failed: "bg-rose-50 text-rose-800 ring-rose-200",
+  Refunded: fallbackBadge,
 };
 
 // Keep this list in sync with whatever your backend accepts for `status`.
 const STATUS_OPTIONS = ["Pending", "Shipped", "Delivered", "Returned", "Cancelled"];
+
+/* ---------- helpers (unchanged) ---------- */
 
 const toTitleCase = (str = "") => (str ? str.charAt(0).toUpperCase() + str.slice(1).toLowerCase() : "-");
 
@@ -42,10 +92,8 @@ const formatDateTime = (iso) => {
   });
 };
 
-// Backend billing_address / shipping_address ek object hota hai
-// { line1, line2, city, state, pincode, country } - isko readable string me convert karo.
-// Pehle code `.address` field dhoondh raha tha jo exist hi nahi karti thi, isliye
-// address hamesha blank aa raha tha.
+// Backend billing_address / shipping_address is an object
+// { line1, line2, city, state, pincode, country } - convert it to a readable string.
 const formatAddress = (addr) => {
   if (!addr) return null;
   const parts = [addr.line1, addr.line2, addr.city, addr.state, addr.pincode, addr.country].filter(
@@ -54,8 +102,7 @@ const formatAddress = (addr) => {
   return parts.length ? parts.join(", ") : null;
 };
 
-// 👇 localStorage me "adminSession" ke naam se ek JSON object save hota hai
-// jisme email, name, role, allowedPaths ke saath vendorId bhi already maujood hai.
+// "adminSession" in localStorage holds email, name, role, allowedPaths and vendorId.
 const ADMIN_SESSION_KEY = "adminSession";
 
 const getAdminSession = () => {
@@ -74,7 +121,107 @@ const getVendorIdFromSession = () => {
   return session?.vendorId || null;
 };
 
-// ---------- Order details modal ----------
+/* ---------- building blocks (same look as Dashboard) ---------- */
+
+function GoldLine({ className = "inset-x-10" }) {
+  return (
+    <span
+      className={`pointer-events-none absolute top-0 h-px bg-gradient-to-r from-transparent via-[rgb(var(--brand-line))] to-transparent ${className}`}
+    />
+  );
+}
+
+function FlipCard({ label, palette, front, back, className = "h-44" }) {
+  const [flipped, setFlipped] = useState(false);
+
+  return (
+    <div
+      className={`${className} transition-transform duration-300 hover:-translate-y-0.5 motion-reduce:transition-none motion-reduce:hover:translate-y-0`}
+      style={{ perspective: "1400px" }}
+    >
+      <button
+        type="button"
+        aria-pressed={flipped}
+        aria-label={`${label}: ${flipped ? "show summary" : "show details"}`}
+        onClick={() => setFlipped((value) => !value)}
+        className="relative block h-full w-full rounded-[var(--radius-card)] text-left transition-transform duration-[800ms] ease-out focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[rgb(var(--brand-line))] motion-reduce:transition-none"
+        style={{
+          transformStyle: "preserve-3d",
+          transform: flipped ? "rotateY(180deg)" : "rotateY(0deg)",
+        }}
+      >
+        <span
+          aria-hidden={flipped}
+          className={`absolute inset-0 flex flex-col overflow-hidden rounded-[var(--radius-card)] bg-gradient-to-br ${palette.front} p-5 text-slate-900 ring-1 ring-[rgb(var(--brand-line)/0.35)]`}
+          style={{ backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden" }}
+        >
+          <GoldLine />
+          <span className="relative flex h-full flex-col">{front}</span>
+          <RotateCw size={12} className="absolute bottom-4 right-4 text-slate-400" aria-hidden="true" />
+        </span>
+
+        <span
+          aria-hidden={!flipped}
+          className={`absolute inset-0 flex flex-col overflow-hidden rounded-[var(--radius-card)] bg-gradient-to-br ${palette.back} p-5 text-white ring-1 ring-[rgb(var(--brand-line)/0.5)]`}
+          style={{
+            backfaceVisibility: "hidden",
+            WebkitBackfaceVisibility: "hidden",
+            transform: "rotateY(180deg)",
+          }}
+        >
+          <GoldLine />
+          <span className="relative flex h-full flex-col">{back}</span>
+        </span>
+      </button>
+    </div>
+  );
+}
+
+function IconChip({ icon: Icon, palette, size = 18 }) {
+  return (
+    <span className={`flex h-9 w-9 items-center justify-center rounded-[var(--radius-control)] bg-gradient-to-br ${palette.chip} text-white`}>
+      <Icon size={size} strokeWidth={1.6} />
+    </span>
+  );
+}
+
+function BackTitle({ children }) {
+  return (
+    <span className={`mb-2 block text-xl font-semibold leading-tight ${gold}`} style={serif}>
+      {children}
+    </span>
+  );
+}
+
+function BackRow({ label, value, valueClass = "text-white" }) {
+  return (
+    <span className="flex items-center justify-between gap-3 border-b border-white/10 py-1.5 text-sm last:border-0">
+      <span className="truncate text-white/60">{label}</span>
+      <span className={`shrink-0 font-semibold ${valueClass}`}>{value}</span>
+    </span>
+  );
+}
+
+function GlanceStat({ icon: Icon, value, label }) {
+  return (
+    <div className="flex items-center gap-3 px-5 first:pl-0 last:pr-0">
+      <Icon size={18} strokeWidth={1.5} className="text-[rgb(var(--brand-text))]" />
+      <div>
+        <p className="text-2xl font-semibold leading-none text-slate-900" style={serif}>
+          {value}
+        </p>
+        <p className="mt-1 text-xs text-slate-500">{label}</p>
+      </div>
+    </div>
+  );
+}
+
+function DetailLabel({ children }) {
+  return <p className="text-xs font-medium text-slate-500">{children}</p>;
+}
+
+/* ---------- Order details modal ---------- */
+
 function OrderDetailsModal({ order, onClose, onStatusChange, statusUpdating }) {
   if (!order) return null;
 
@@ -84,17 +231,29 @@ function OrderDetailsModal({ order, onClose, onStatusChange, statusUpdating }) {
       onClick={onClose}
     >
       <div
-        className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-control bg-white shadow-pop"
+        role="dialog"
+        aria-modal="true"
+        aria-label={`Order ${order.id}`}
+        className="relative max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-[var(--radius-card)] bg-white ring-1 ring-[rgb(var(--brand-line)/0.4)]"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
+        <GoldLine className="inset-x-10" />
+
+        <div className="flex items-center justify-between border-b border-stone-200 bg-gradient-to-br from-[rgb(var(--hero-a))] via-[rgb(var(--hero-b))] to-[rgb(var(--hero-c))] px-6 py-5">
           <div>
-            <p className="text-sm font-medium text-amber-600">Order details</p>
-            <h2 className="text-lg font-bold text-ink-950">{order.id}</h2>
+            <p className="inline-flex items-center gap-2 text-sm font-medium text-[rgb(var(--brand-dark))]">
+              <Gem size={14} strokeWidth={1.6} />
+              Order details
+            </p>
+            <h2 className="mt-1 text-2xl font-semibold text-slate-900" style={serif}>
+              {order.id}
+            </h2>
           </div>
           <button
+            type="button"
             onClick={onClose}
-            className="rounded-control p-1.5 text-slate-400 hover:bg-slate-100 hover:text-ink-700"
+            aria-label="Close order details"
+            className="rounded-[var(--radius-control)] p-1.5 text-slate-500 transition-colors hover:bg-white/70 hover:text-slate-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[rgb(var(--brand-line))]"
           >
             <X size={18} />
           </button>
@@ -103,53 +262,53 @@ function OrderDetailsModal({ order, onClose, onStatusChange, statusUpdating }) {
         <div className="space-y-6 px-6 py-5">
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Vendor</p>
-              <p className="mt-1 font-medium text-ink-950">{order.vendorName}</p>
+              <DetailLabel>Vendor</DetailLabel>
+              <p className="mt-1 font-semibold text-slate-900">{order.vendorName}</p>
               <p className="text-xs text-slate-500">{order.vendorEmail}</p>
             </div>
             <div>
-              <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Placed on</p>
-              <p className="mt-1 font-medium text-ink-950">{order.dateTime}</p>
+              <DetailLabel>Placed on</DetailLabel>
+              <p className="mt-1 font-semibold text-slate-900">{order.dateTime}</p>
             </div>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-4 border-t border-stone-100 pt-5 sm:grid-cols-2">
             <div>
-              <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Shipping address</p>
-              <p className="mt-1 text-sm text-ink-800">{order.shippingAddress}</p>
+              <DetailLabel>Shipping address</DetailLabel>
+              <p className="mt-1 text-sm text-slate-700">{order.shippingAddress}</p>
             </div>
             <div>
-              <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Billing address</p>
-              <p className="mt-1 text-sm text-ink-800">{order.billingAddress}</p>
+              <DetailLabel>Billing address</DetailLabel>
+              <p className="mt-1 text-sm text-slate-700">{order.billingAddress}</p>
             </div>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-3">
+          <div className="grid gap-4 border-t border-stone-100 pt-5 sm:grid-cols-3">
             <div>
-              <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Payment method</p>
-              <div className="mt-1 flex items-center gap-1 text-sm text-ink-800">
-                <Truck size={14} />
+              <DetailLabel>Payment method</DetailLabel>
+              <div className="mt-1 flex items-center gap-1.5 text-sm text-slate-700">
+                <Truck size={14} strokeWidth={1.6} className="text-[rgb(var(--brand-text))]" />
                 {order.channel}
               </div>
             </div>
             <div>
-              <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Payment status</p>
+              <DetailLabel>Payment status</DetailLabel>
               <span
-                className={`mt-1 inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold ring-1 ${
-                  paymentStatusClass[order.paymentStatus] || "bg-slate-50 text-ink-800 ring-slate-200"
+                className={`mt-1 inline-flex rounded-[var(--radius-control)] px-2 py-0.5 text-xs font-medium ring-1 ${
+                  paymentStatusClass[order.paymentStatus] || fallbackBadge
                 }`}
               >
                 {order.paymentStatus}
               </span>
             </div>
             <div>
-              <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Order status</p>
+              <DetailLabel>Order status</DetailLabel>
               <select
                 value={order.status}
                 disabled={statusUpdating}
                 onChange={(e) => onStatusChange(order, e.target.value)}
-                className={`mt-1 w-full rounded-full border-0 px-2.5 py-1 text-xs font-bold ring-1 focus:outline-none focus:ring-2 focus:ring-amber-500/40 ${
-                  statusClass[order.status] || "bg-slate-50 text-ink-800 ring-slate-200"
+                className={`mt-1 w-full rounded-[var(--radius-control)] border-0 px-2.5 py-1.5 text-xs font-semibold ring-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-[rgb(var(--brand-line))] ${
+                  statusClass[order.status] || fallbackBadge
                 } ${statusUpdating ? "opacity-60" : ""}`}
               >
                 {STATUS_OPTIONS.map((option) => (
@@ -161,42 +320,48 @@ function OrderDetailsModal({ order, onClose, onStatusChange, statusUpdating }) {
             </div>
           </div>
 
-          <div>
-            <p className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-500">Items</p>
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-slate-500">
-                  <th className="py-1.5 text-left font-semibold">Product</th>
-                  <th className="py-1.5 text-right font-semibold">Qty</th>
-                  <th className="py-1.5 text-right font-semibold">Unit price</th>
-                  <th className="py-1.5 text-right font-semibold">Total</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {order.items.map((item) => (
-                  <tr key={item.id}>
-                    <td className="py-2">{item.name}</td>
-                    <td className="py-2 text-right">{item.quantity}</td>
-                    <td className="py-2 text-right">{inr(item.unitPrice)}</td>
-                    <td className="py-2 text-right font-semibold">{inr(item.total)}</td>
+          <div className="border-t border-stone-100 pt-5">
+            <h3 className="mb-2 text-lg font-semibold text-slate-900" style={serif}>
+              Items
+            </h3>
+            <div className="overflow-x-auto rounded-[var(--radius-control)] border border-stone-200">
+              <table className="w-full text-sm">
+                <thead className="border-b border-stone-200 bg-[rgb(var(--tint-50))] text-slate-600">
+                  <tr>
+                    <th className="px-4 py-2 text-left font-semibold">Product</th>
+                    <th className="px-4 py-2 text-right font-semibold">Qty</th>
+                    <th className="px-4 py-2 text-right font-semibold">Unit price</th>
+                    <th className="px-4 py-2 text-right font-semibold">Total</th>
                   </tr>
-                ))}
-              </tbody>
-              <tfoot>
-                <tr>
-                  <td colSpan={3} className="pt-3 text-right font-semibold text-ink-700">
-                    Subtotal
-                  </td>
-                  <td className="pt-3 text-right font-bold">{inr(order.subtotal)}</td>
-                </tr>
-                <tr>
-                  <td colSpan={3} className="text-right font-semibold text-ink-700">
-                    Total
-                  </td>
-                  <td className="text-right text-base font-bold text-amber-700">{inr(order.total)}</td>
-                </tr>
-              </tfoot>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-stone-100">
+                  {order.items.map((item) => (
+                    <tr key={item.id}>
+                      <td className="px-4 py-2.5 text-slate-900">{item.name}</td>
+                      <td className="px-4 py-2.5 text-right text-slate-700">{item.quantity}</td>
+                      <td className="px-4 py-2.5 text-right text-slate-700">{inr(item.unitPrice)}</td>
+                      <td className="px-4 py-2.5 text-right font-semibold text-slate-900">{inr(item.total)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot className="border-t border-stone-200">
+                  <tr>
+                    <td colSpan={3} className="px-4 pt-3 text-right font-medium text-slate-600">
+                      Subtotal
+                    </td>
+                    <td className="px-4 pt-3 text-right font-semibold text-slate-900">{inr(order.subtotal)}</td>
+                  </tr>
+                  <tr>
+                    <td colSpan={3} className="px-4 pb-3 text-right font-medium text-slate-600">
+                      Total
+                    </td>
+                    <td className="px-4 pb-3 text-right text-xl font-semibold text-[rgb(var(--brand-text))]" style={serif}>
+                      {inr(order.total)}
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
           </div>
 
           <p className="text-xs text-slate-400">
@@ -207,6 +372,8 @@ function OrderDetailsModal({ order, onClose, onStatusChange, statusUpdating }) {
     </div>
   );
 }
+
+/* ---------- page ---------- */
 
 export default function Orders() {
   const [query, setQuery] = useState("");
@@ -351,25 +518,56 @@ export default function Orders() {
     }
   };
 
-  const metricStatuses = [
-    { status: "Pending", icon: Timer, tone: "orange" },
-    { status: "Shipped", icon: Truck, tone: "blue" },
-    { status: "Delivered", icon: CheckCircle2, tone: "green" },
-    { status: "Returned", icon: RotateCcw, tone: "red" },
-  ];
+  /* ---- display-only summaries ---- */
+  const orderValue = visibleOrders.reduce((sum, order) => sum + (order.total || 0), 0);
+  const paidCount = visibleOrders.filter((order) => order.paymentStatus === "Paid").length;
+
+  // Back of each status card: value and payment breakdown for that status.
+  const backRowsFor = (status) => {
+    const list = visibleOrders.filter((order) => order.status === status);
+    const counts = list.reduce((acc, order) => {
+      acc[order.paymentStatus] = (acc[order.paymentStatus] || 0) + 1;
+      return acc;
+    }, {});
+    return [
+      { label: "Order value", value: inr(list.reduce((sum, order) => sum + (order.total || 0), 0)), valueClass: gold },
+      ...Object.entries(counts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 3)
+        .map(([label, value]) => ({ label: `Payment ${label.toLowerCase()}`, value })),
+    ];
+  };
 
   return (
-    <div className="space-y-5">
-      <div className="rounded-card border border-line bg-surface-raised p-5 shadow-card sm:p-6">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <p className="text-sm font-medium text-amber-600">Order operations</p>
-            <h1 className="mt-1 text-[1.65rem] font-bold tracking-tight text-ink-950">Orders</h1>
-            <p className="text-sm text-slate-500">Track marketplace orders across vendors, fulfillment channels, and delivery status.</p>
+    <div className="space-y-8">
+      {/* Hero */}
+      <section className="relative overflow-hidden rounded-[var(--radius-card)] bg-gradient-to-br from-[rgb(var(--hero-a))] via-[rgb(var(--hero-b))] to-[rgb(var(--hero-c))] p-7 ring-1 ring-[rgb(var(--brand-line)/0.4)] sm:p-10">
+        <GoldLine className="inset-x-16" />
+
+        <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
+          <div className="max-w-2xl">
+            <p className="inline-flex items-center gap-2 text-sm font-medium text-[rgb(var(--brand-dark))]">
+              <Gem size={14} strokeWidth={1.6} />
+              Order operations
+            </p>
+            <h1 className="mt-3 text-4xl font-semibold leading-[1.08] tracking-tight text-slate-900 sm:text-5xl" style={serif}>
+              Orders
+            </h1>
+            <p className="mt-4 max-w-xl text-sm leading-relaxed text-slate-600">
+              Track marketplace orders across vendors, fulfillment channels, and delivery status.
+            </p>
           </div>
-          <div className="flex flex-col gap-3 sm:flex-row">
-            <div className="relative">
-              <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+
+          <div className="flex flex-col gap-5 lg:items-end">
+            <div className="flex divide-x divide-[rgb(var(--brand-line)/0.4)]">
+              <GlanceStat icon={ClipboardList} value={visibleOrders.length} label="matching orders" />
+              <GlanceStat icon={Truck} value={inr(orderValue)} label="order value" />
+              <GlanceStat icon={CheckCircle2} value={paidCount} label="paid orders" />
+            </div>
+
+            <label className="relative block w-full lg:w-80">
+              <span className="sr-only">Search orders</span>
+              <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" aria-hidden="true" />
               <input
                 value={query}
                 onChange={(event) => {
@@ -377,30 +575,65 @@ export default function Orders() {
                   setPage(1);
                 }}
                 placeholder="Search orders, products, address"
-                className="w-full rounded-control border border-slate-300 py-2 pl-10 pr-3 text-sm outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/30 sm:w-80"
+                className="w-full rounded-[var(--radius-control)] border border-[rgb(var(--brand-line)/0.5)] bg-white/80 py-2.5 pl-10 pr-3 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus-visible:ring-2 focus-visible:ring-[rgb(var(--brand-line))]"
               />
-            </div>
+            </label>
           </div>
         </div>
-      </div>
+      </section>
 
-      <div className="grid gap-4 md:grid-cols-4">
-        {metricStatuses.map((item) => (
-          <MetricCard
-            key={item.status}
-            label={item.status}
-            value={visibleOrders.filter((order) => order.status === item.status).length}
-            helper="orders in queue"
-            icon={item.icon}
-            tone={item.tone}
-          />
-        ))}
-      </div>
+      {/* Status flip cards */}
+      <section aria-label="Order status summary">
+        <p className="mb-3 flex items-center gap-1.5 text-xs text-slate-500">
+          <RotateCw size={12} />
+          Select a card to flip it for a breakdown.
+        </p>
+        <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+          {statusMeta.map((item) => {
+            const palette = palettes[item.status];
+            const count = visibleOrders.filter((order) => order.status === item.status).length;
+            return (
+              <FlipCard
+                key={item.status}
+                label={item.status}
+                palette={palette}
+                front={
+                  <>
+                    <span className="flex items-start justify-between">
+                      <span className="text-sm font-medium text-slate-600">{item.status}</span>
+                      <IconChip icon={item.icon} palette={palette} />
+                    </span>
+                    <span className="mt-auto block text-4xl font-semibold tracking-tight text-slate-900" style={serif}>
+                      {count}
+                    </span>
+                    <span className="mt-0.5 block pr-6 text-xs text-slate-600">{item.helper}</span>
+                  </>
+                }
+                back={
+                  <>
+                    <BackTitle>{item.status} orders</BackTitle>
+                    {count === 0 ? (
+                      <span className="text-sm text-white/60">Nothing to show yet.</span>
+                    ) : (
+                      backRowsFor(item.status).map((row) => <BackRow key={row.label} {...row} />)
+                    )}
+                  </>
+                }
+              />
+            );
+          })}
+        </div>
+      </section>
 
-      <div className="overflow-hidden rounded-card border border-line bg-surface-raised shadow-card">
-        <div className="flex items-center gap-2 border-b border-slate-100 px-5 py-4">
-          <ClipboardListIcon />
-          <h2 className="font-bold">Order queue</h2>
+      {/* Order queue */}
+      <section className="relative overflow-hidden rounded-[var(--radius-card)] bg-white ring-1 ring-stone-200">
+        <GoldLine className="inset-x-10" />
+        <div className="flex items-center justify-between gap-3 border-b border-stone-200 px-6 py-5">
+          <h2 className="flex items-center gap-3 text-xl font-semibold text-slate-900" style={serif}>
+            <ClipboardList size={17} strokeWidth={1.6} className="text-[rgb(var(--brand-text))]" />
+            Order queue
+          </h2>
+          {!loading && !error && <span className="text-xs text-slate-500">{visibleOrders.length} orders</span>}
         </div>
 
         {loading ? (
@@ -409,62 +642,69 @@ export default function Orders() {
             <span className="text-sm">Loading orders…</span>
           </div>
         ) : error ? (
-          <div className="px-5 py-10 text-center text-sm text-red-600">
+          <div className="px-6 py-10 text-center text-sm text-rose-700">
             Failed to load orders: {error}
           </div>
         ) : visibleOrders.length === 0 ? (
-          <div className="px-5 py-10 text-center text-sm text-slate-500">No orders found.</div>
+          <div className="px-6 py-10 text-center text-sm text-slate-500">
+            No orders found. Try a different search term.
+          </div>
         ) : (
           <>
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm">
-                <thead className="bg-ink-800 text-white">
+                <thead className="border-b border-stone-200 bg-[rgb(var(--tint-50))] text-slate-600">
                   <tr>
-                    <th className="px-5 py-3 font-semibold">Order</th>
-                    <th className="px-5 py-3 font-semibold">Vendor</th>
-                    <th className="px-5 py-3 font-semibold">Address</th>
-                    <th className="px-5 py-3 font-semibold">Payment</th>
-                    <th className="px-5 py-3 font-semibold">Total</th>
-                    <th className="px-5 py-3 font-semibold">Status</th>
-                    <th className="px-5 py-3 font-semibold text-center">View</th>
+                    <th className="px-6 py-3 font-semibold">Order</th>
+                    <th className="px-6 py-3 font-semibold">Vendor</th>
+                    <th className="px-6 py-3 font-semibold">Address</th>
+                    <th className="px-6 py-3 font-semibold">Payment</th>
+                    <th className="px-6 py-3 font-semibold">Total</th>
+                    <th className="px-6 py-3 font-semibold">Status</th>
+                    <th className="px-6 py-3 text-center font-semibold">View</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-stone-100">
                   {pagedOrders.map((order) => (
-                    <tr key={order.id} className="hover:bg-[rgb(var(--page-bg))]">
-                      <td className="px-5 py-4">
-                        <p className="font-bold text-amber-600">{order.id}</p>
-                        <p className="text-xs text-slate-500">{order.dateTime} · {order.itemCount} item(s)</p>
+                    <tr key={order.id} className="transition-colors hover:bg-stone-50">
+                      <td className="px-6 py-4">
+                        <p className="font-semibold text-[rgb(var(--brand-text))]">{order.id}</p>
+                        <p className="text-xs text-slate-500">
+                          {order.dateTime}, {order.itemCount} item(s)
+                        </p>
                       </td>
-                      <td className="px-5 py-4">
-                        <p className="font-medium">{order.vendorName}</p>
+                      <td className="px-6 py-4">
+                        <p className="font-medium text-slate-900">{order.vendorName}</p>
                         <p className="text-xs text-slate-500">{order.vendorEmail}</p>
                       </td>
-                      <td className="px-5 py-4 max-w-[220px] truncate" title={order.customerAddress}>
+                      <td className="max-w-[220px] truncate px-6 py-4 text-slate-700" title={order.customerAddress}>
                         {order.customerAddress}
                       </td>
-                      <td className="px-5 py-4">
-                        <div className="flex items-center gap-1 text-ink-800">
-                          <Truck size={15} />
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-1.5 text-slate-700">
+                          <Truck size={15} strokeWidth={1.6} className="text-[rgb(var(--brand-text))]" />
                           {order.channel}
                         </div>
                         <span
-                          className={`mt-1 inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold ring-1 ${
-                            paymentStatusClass[order.paymentStatus] || "bg-slate-50 text-ink-800 ring-slate-200"
+                          className={`mt-1 inline-flex rounded-[var(--radius-control)] px-2 py-0.5 text-xs font-medium ring-1 ${
+                            paymentStatusClass[order.paymentStatus] || fallbackBadge
                           }`}
                         >
                           {order.paymentStatus}
                         </span>
                       </td>
-                      <td className="px-5 py-4 font-bold">{inr(order.total)}</td>
-                      <td className="px-5 py-4">
+                      <td className="px-6 py-4 text-lg font-semibold text-slate-900" style={serif}>
+                        {inr(order.total)}
+                      </td>
+                      <td className="px-6 py-4">
                         <select
                           value={order.status}
                           disabled={statusUpdatingId === order.mongoId}
                           onClick={(e) => e.stopPropagation()}
                           onChange={(e) => handleStatusChange(order, e.target.value)}
-                          className={`rounded-full border-0 px-2.5 py-1 text-xs font-bold ring-1 focus:outline-none focus:ring-2 focus:ring-amber-500/40 ${
-                            statusClass[order.status] || "bg-slate-50 text-ink-800 ring-slate-200"
+                          aria-label={`Status for ${order.id}`}
+                          className={`rounded-[var(--radius-control)] border-0 px-2.5 py-1 text-xs font-semibold ring-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-[rgb(var(--brand-line))] ${
+                            statusClass[order.status] || fallbackBadge
                           } ${statusUpdatingId === order.mongoId ? "opacity-60" : ""}`}
                         >
                           {STATUS_OPTIONS.map((option) => (
@@ -474,13 +714,15 @@ export default function Orders() {
                           ))}
                         </select>
                       </td>
-                      <td className="px-5 py-4 text-center">
+                      <td className="px-6 py-4 text-center">
                         <button
+                          type="button"
                           onClick={() => setSelectedOrderId(order.mongoId)}
-                          className="inline-flex items-center justify-center rounded-full p-2 text-slate-500 hover:bg-amber-50 hover:text-amber-700"
+                          className="inline-flex items-center justify-center rounded-[var(--radius-control)] p-2 text-slate-500 transition-colors hover:bg-stone-100 hover:text-[rgb(var(--brand-text))] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[rgb(var(--brand-line))]"
                           title="View order details"
+                          aria-label={`View details for ${order.id}`}
                         >
-                          <Eye size={17} />
+                          <Eye size={17} strokeWidth={1.6} />
                         </button>
                       </td>
                     </tr>
@@ -497,7 +739,7 @@ export default function Orders() {
             />
           </>
         )}
-      </div>
+      </section>
 
       <OrderDetailsModal
         order={selectedOrder}
@@ -506,29 +748,5 @@ export default function Orders() {
         statusUpdating={statusUpdatingId === selectedOrder?.mongoId}
       />
     </div>
-  );
-}
-
-// Small inline icon so we don't need an extra import line change elsewhere in your codebase
-function ClipboardListIcon() {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="19"
-      height="19"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="#c45500"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <rect width="8" height="4" x="8" y="2" rx="1" ry="1" />
-      <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
-      <path d="M12 11h4" />
-      <path d="M12 16h4" />
-      <path d="M8 11h.01" />
-      <path d="M8 16h.01" />
-    </svg>
   );
 }

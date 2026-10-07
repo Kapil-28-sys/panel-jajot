@@ -375,11 +375,7 @@ function Preview({ draft, mode, onModeChange }) {
 /* ---------- main component ---------- */
 
 export default function ThemeSettings({ notify }) {
-<<<<<<< HEAD
-  const { theme, mode: appMode, source, saveTheme, resetTheme } = useTheme();
-=======
   const { theme, mode: appMode, source, saveTheme, resetTheme, isVendor } = useTheme();
->>>>>>> b77933a (scss used in this)
   const [draft, setDraft] = useState(theme);
   const [tab, setTab] = useState("branding");
   const [previewMode, setPreviewMode] = useState(appMode);
@@ -417,19 +413,11 @@ export default function ThemeSettings({ notify }) {
     setSaving(true);
     const result = await saveTheme(draft);
     setSaving(false);
-<<<<<<< HEAD
-    report(result, "Theme saved — Super Admin and Vendor panels now use it.");
-  };
-
-  const reset = async () => {
-    if (!window.confirm("Reset the whole theme to the default look?")) return;
-=======
     report(result, isVendor ? "Saved — your panel now uses this look." : "Theme saved — Super Admin and Vendor panels now use it.");
   };
 
   const reset = async () => {
     if (!window.confirm(isVendor ? "Go back to the standard look set by the marketplace?" : "Reset the whole theme to the default look?")) return;
->>>>>>> b77933a (scss used in this)
     setSaving(true);
     const result = await resetTheme();
     setSaving(false);

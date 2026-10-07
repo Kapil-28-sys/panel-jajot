@@ -1,369 +1,20 @@
 import React, { useState } from "react";
+import {
+  AlertTriangle,
+  CalendarDays,
+  CheckCircle2,
+  Clock,
+  FileText,
+  Gem,
+  ImageIcon,
+  LifeBuoy,
+  UploadCloud,
+  Wallet,
+} from "lucide-react";
 
-const styles = `
-.resolve-claim-page {
-  --amz-blue: #007185;
-  --amz-blue-dark: #003553;
-  --amz-text: #0f1111;
-  --amz-text-secondary: #565959;
-  --amz-border: #d5d9d9;
-  --amz-bg: #eaeded;
-  --amz-card-bg: #ffffff;
-  --amz-green: #067d62;
-  --amz-green-bg: #f0fbf6;
-  --amz-orange: #e47911;
-  --amz-orange-bg: #fef4e8;
-  --amz-red: #b12704;
-  --amz-red-bg: #fdf1f0;
+/* ---------- design tokens (same CSS variables as the Dashboard) ---------- */
 
-  font-family: "Amazon Ember", Arial, sans-serif;
-  background: var(--amz-bg);
-  color: var(--amz-text);
-  padding: 24px;
-  min-height: 100vh;
-}
-.resolve-claim-page * { box-sizing: border-box; }
-
-/* top nav / breadcrumb */
-.resolve-claim-page .breadcrumb {
-  font-size: 13px;
-  color: var(--amz-text-secondary);
-  margin-bottom: 10px;
-}
-.resolve-claim-page .breadcrumb a {
-  color: var(--amz-blue);
-  text-decoration: none;
-}
-.resolve-claim-page .breadcrumb a:hover { text-decoration: underline; }
-
-.resolve-claim-page .page-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  margin-bottom: 6px;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-.resolve-claim-page .title-block h1 {
-  font-size: 21px;
-  font-weight: 700;
-  margin: 0 0 4px 0;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.resolve-claim-page .title-block .claim-id {
-  font-size: 13px;
-  color: var(--amz-text-secondary);
-}
-.resolve-claim-page .header-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 12px;
-  border-radius: 12px;
-  font-size: 12px;
-  font-weight: 700;
-  background: var(--amz-orange-bg);
-  color: #8a5a00;
-}
-.resolve-claim-page .header-badge .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--amz-orange); }
-
-.resolve-claim-page .deadline-banner {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  background: var(--amz-red-bg);
-  border: 1px solid #f5c6c0;
-  border-radius: 8px;
-  padding: 10px 14px;
-  font-size: 13px;
-  color: var(--amz-red);
-  margin: 14px 0 18px 0;
-}
-.resolve-claim-page .deadline-banner strong { font-weight: 700; }
-
-/* layout */
-.resolve-claim-page .layout {
-  display: grid;
-  grid-template-columns: 2fr 1fr;
-  gap: 16px;
-  align-items: start;
-}
-@media (max-width: 900px) {
-  .resolve-claim-page .layout { grid-template-columns: 1fr; }
-}
-
-.resolve-claim-page .card {
-  background: var(--amz-card-bg);
-  border: 1px solid var(--amz-border);
-  border-radius: 8px;
-  padding: 18px;
-  margin-bottom: 16px;
-}
-.resolve-claim-page .card h2 {
-  font-size: 15px;
-  font-weight: 700;
-  margin: 0 0 14px 0;
-}
-.resolve-claim-page .card h3 {
-  font-size: 13px;
-  font-weight: 700;
-  margin: 0 0 8px 0;
-}
-
-/* summary grid */
-.resolve-claim-page .summary-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 14px 24px;
-}
-.resolve-claim-page .summary-item .label {
-  font-size: 12px;
-  color: var(--amz-text-secondary);
-  margin-bottom: 3px;
-}
-.resolve-claim-page .summary-item .value {
-  font-size: 13px;
-  color: var(--amz-text);
-  font-weight: 500;
-}
-.resolve-claim-page .summary-item .value.link {
-  color: var(--amz-blue);
-  cursor: pointer;
-}
-.resolve-claim-page .summary-item .value.link:hover { text-decoration: underline; }
-.resolve-claim-page .summary-item .value.amount {
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--amz-red);
-}
-
-/* product row */
-.resolve-claim-page .product-row {
-  display: flex;
-  gap: 12px;
-  align-items: flex-start;
-  padding: 12px 0;
-  border-top: 1px solid #f0f2f2;
-  margin-top: 12px;
-}
-.resolve-claim-page .product-thumb {
-  width: 52px;
-  height: 52px;
-  border-radius: 6px;
-  border: 1px solid var(--amz-border);
-  background: #f7f8f8;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.resolve-claim-page .product-detail .name { font-size: 13px; font-weight: 500; color: var(--amz-text); margin-bottom: 3px; }
-.resolve-claim-page .product-detail .meta { font-size: 12px; color: var(--amz-text-secondary); }
-
-/* timeline */
-.resolve-claim-page .timeline {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-}
-.resolve-claim-page .timeline-item {
-  display: flex;
-  gap: 12px;
-  position: relative;
-  padding-bottom: 20px;
-}
-.resolve-claim-page .timeline-item:last-child { padding-bottom: 0; }
-.resolve-claim-page .timeline-marker {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: var(--amz-blue-dark);
-  margin-top: 4px;
-  flex-shrink: 0;
-  position: relative;
-  z-index: 1;
-}
-.resolve-claim-page .timeline-item:not(:last-child) .timeline-marker::after {
-  content: "";
-  position: absolute;
-  top: 10px;
-  left: 4px;
-  width: 1px;
-  height: 34px;
-  background: var(--amz-border);
-}
-.resolve-claim-page .timeline-content .timeline-title { font-size: 13px; font-weight: 500; color: var(--amz-text); }
-.resolve-claim-page .timeline-content .timeline-date { font-size: 12px; color: var(--amz-text-secondary); margin-top: 2px; }
-
-/* evidence list */
-.resolve-claim-page .evidence-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.resolve-claim-page .evidence-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  border: 1px solid var(--amz-border);
-  border-radius: 6px;
-  padding: 8px 10px;
-  font-size: 13px;
-}
-.resolve-claim-page .evidence-item svg { flex-shrink: 0; color: #8b9195; }
-.resolve-claim-page .evidence-item .name { flex: 1; color: var(--amz-text); }
-.resolve-claim-page .evidence-item a { color: var(--amz-blue); font-size: 12px; text-decoration: none; }
-.resolve-claim-page .evidence-item a:hover { text-decoration: underline; }
-
-/* response options */
-.resolve-claim-page .option-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-.resolve-claim-page .option-card {
-  border: 1px solid var(--amz-border);
-  border-radius: 8px;
-  padding: 12px 14px;
-  cursor: pointer;
-  display: flex;
-  gap: 10px;
-  align-items: flex-start;
-}
-.resolve-claim-page .option-card.selected {
-  border-color: var(--amz-blue);
-  background: #f0fbfc;
-  box-shadow: 0 0 0 1px var(--amz-blue);
-}
-.resolve-claim-page .option-card input { margin-top: 3px; }
-.resolve-claim-page .option-card .option-title { font-size: 13px; font-weight: 700; color: var(--amz-text); margin-bottom: 2px; }
-.resolve-claim-page .option-card .option-sub { font-size: 12px; color: var(--amz-text-secondary); }
-
-/* textarea + upload */
-.resolve-claim-page label.field-label {
-  display: block;
-  font-size: 13px;
-  font-weight: 700;
-  margin: 16px 0 6px 0;
-}
-.resolve-claim-page textarea {
-  width: 100%;
-  min-height: 90px;
-  border: 1px solid var(--amz-border);
-  border-radius: 8px;
-  padding: 10px 12px;
-  font-size: 13px;
-  font-family: inherit;
-  resize: vertical;
-  color: var(--amz-text);
-}
-.resolve-claim-page textarea:focus { outline: none; border-color: var(--amz-blue); box-shadow: 0 0 0 1px var(--amz-blue); }
-.resolve-claim-page .char-count { font-size: 11px; color: var(--amz-text-secondary); text-align: right; margin-top: 4px; }
-
-.resolve-claim-page .upload-box {
-  border: 1.5px dashed var(--amz-border);
-  border-radius: 8px;
-  padding: 22px;
-  text-align: center;
-  color: var(--amz-text-secondary);
-  font-size: 13px;
-  cursor: pointer;
-  margin-top: 6px;
-}
-.resolve-claim-page .upload-box:hover { border-color: var(--amz-blue); background: #f7fbfb; }
-.resolve-claim-page .upload-box svg { margin-bottom: 6px; }
-.resolve-claim-page .upload-box .upload-hint { font-size: 11px; margin-top: 2px; }
-
-/* footer actions */
-.resolve-claim-page .form-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-  margin-top: 18px;
-  padding-top: 16px;
-  border-top: 1px solid #f0f2f2;
-}
-.resolve-claim-page .btn {
-  border: 1px solid var(--amz-border);
-  background: #fff;
-  border-radius: 8px;
-  padding: 9px 18px;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  color: var(--amz-text);
-}
-.resolve-claim-page .btn:hover { background: #f7f8f8; }
-.resolve-claim-page .btn-primary {
-  background: linear-gradient(to bottom, #f7dfa5, #f0c14b);
-  border: 1px solid #a88734;
-  color: #111;
-}
-.resolve-claim-page .btn-primary:hover { background: linear-gradient(to bottom, #f5d78e, #eeb933); }
-.resolve-claim-page .btn-primary:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-/* sidebar */
-.resolve-claim-page .sidebar-note {
-  font-size: 12px;
-  color: var(--amz-text-secondary);
-  line-height: 1.5;
-}
-.resolve-claim-page .policy-link {
-  display: inline-block;
-  margin-top: 8px;
-  color: var(--amz-blue);
-  text-decoration: none;
-  font-size: 13px;
-}
-.resolve-claim-page .policy-link:hover { text-decoration: underline; }
-
-.resolve-claim-page .success-banner {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  background: var(--amz-green-bg);
-  border: 1px solid #bfe6d8;
-  border-radius: 8px;
-  padding: 14px;
-  color: var(--amz-green);
-  font-size: 13px;
-  margin-bottom: 16px;
-}
-`;
-
-const ClockIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-    <circle cx="9" cy="9" r="7.3" stroke="currentColor" strokeWidth="1.4" />
-    <path d="M9 5v4l3 2" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
-
-const FileIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-    <path d="M4 1.5h5.5L13 5v9.5a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-12a1 1 0 0 1 1-1Z" stroke="currentColor" strokeWidth="1.3" />
-    <path d="M9.5 1.5V5H13" stroke="currentColor" strokeWidth="1.3" />
-  </svg>
-);
-
-const UploadIcon = () => (
-  <svg width="26" height="26" viewBox="0 0 26 26" fill="none">
-    <path d="M13 17V6" stroke="#8B9195" strokeWidth="1.6" strokeLinecap="round" />
-    <path d="M8 10.5L13 5.5L18 10.5" stroke="#8B9195" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-    <path d="M5 18v2.5a1.5 1.5 0 0 0 1.5 1.5h13a1.5 1.5 0 0 0 1.5-1.5V18" stroke="#8B9195" strokeWidth="1.6" strokeLinecap="round" />
-  </svg>
-);
-
-const CheckCircle = () => (
-  <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-    <circle cx="10" cy="10" r="9" fill="#067D62" />
-    <path d="M6 10.5l2.5 2.5L14.5 7" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
+const serif = { fontFamily: "var(--font-display)" };
 
 const RESPONSE_OPTIONS = [
   {
@@ -383,6 +34,64 @@ const RESPONSE_OPTIONS = [
   },
 ];
 
+const SUMMARY_ITEMS = [
+  { label: "Claim type", value: "A-to-z Guarantee claim" },
+  { label: "Claim reason", value: "Item not as described" },
+  { label: "Amount claimed", value: "₹1,499.00", tone: "amount" },
+  { label: "Claim filed on", value: "14 Jul 2026" },
+  { label: "Order date", value: "3 Jul 2026" },
+  { label: "Order ID", value: "408-1234567-8901234", tone: "link" },
+];
+
+const EVIDENCE = ["photo_earbud_defect.jpg", "order_screenshot.png"];
+
+const TIMELINE = [
+  { title: "Claim filed by customer", date: "14 Jul 2026, 4:12 PM" },
+  { title: "Amazon requested seller response", date: "14 Jul 2026, 4:20 PM" },
+  { title: "Awaiting your response", date: "Due 21 Jul 2026", current: true },
+];
+
+/* ---------- building blocks (same look as Dashboard) ---------- */
+
+function GoldLine({ className = "inset-x-10" }) {
+  return (
+    <span
+      className={`pointer-events-none absolute top-0 h-px bg-gradient-to-r from-transparent via-[rgb(var(--brand-line))] to-transparent ${className}`}
+    />
+  );
+}
+
+function Panel({ icon: Icon, title, children, className = "" }) {
+  return (
+    <section
+      className={`relative rounded-[var(--radius-card)] bg-white p-6 ring-1 ring-stone-200 sm:p-7 ${className}`}
+    >
+      <GoldLine className="inset-x-10" />
+      <h2 className="flex items-center gap-3 text-xl font-semibold text-slate-900" style={serif}>
+        {Icon && <Icon size={17} strokeWidth={1.6} className="text-[rgb(var(--brand-text))]" />}
+        {title}
+      </h2>
+      <div className="mt-5">{children}</div>
+    </section>
+  );
+}
+
+function GlanceStat({ icon: Icon, value, label }) {
+  return (
+    <div className="flex items-center gap-3 px-5 first:pl-0 last:pr-0">
+      <Icon size={18} strokeWidth={1.5} className="text-[rgb(var(--brand-text))]" />
+      <div>
+        <p className="text-2xl font-semibold leading-none text-slate-900" style={serif}>
+          {value}
+        </p>
+        <p className="mt-1 text-xs text-slate-500">{label}</p>
+      </div>
+    </div>
+  );
+}
+
+/* ---------- page ---------- */
+
 export default function ResolveClaim() {
   const [selectedOption, setSelectedOption] = useState("dispute");
   const [comment, setComment] = useState("");
@@ -391,132 +100,166 @@ export default function ResolveClaim() {
   const maxChars = 2000;
 
   return (
-    <div className="resolve-claim-page">
-      <style>{styles}</style>
+    <div className="space-y-8">
+      {/* Breadcrumb */}
+      <nav aria-label="Breadcrumb" className="text-xs text-slate-500">
+        <a href="#" className="text-[rgb(var(--brand-text))] hover:underline">
+          Orders
+        </a>
+        <span className="mx-2">›</span>
+        <a href="#" className="text-[rgb(var(--brand-text))] hover:underline">
+          Claims
+        </a>
+        <span className="mx-2">›</span>
+        <span>Resolve claim</span>
+      </nav>
 
-      <div className="breadcrumb">
-        <a href="#">Orders</a> &nbsp;›&nbsp; <a href="#">Claims</a> &nbsp;›&nbsp; Resolve claim
-      </div>
+      {/* Hero */}
+      <section className="relative overflow-hidden rounded-[var(--radius-card)] bg-gradient-to-br from-[rgb(var(--hero-a))] via-[rgb(var(--hero-b))] to-[rgb(var(--hero-c))] p-7 ring-1 ring-[rgb(var(--brand-line)/0.4)] sm:p-10">
+        <GoldLine className="inset-x-16" />
 
-      <div className="page-header">
-        <div className="title-block">
-          <h1>
-            Resolve claim
-            <span className="header-badge">
-              <span className="dot" />
-              Action required
-            </span>
-          </h1>
-          <div className="claim-id">Claim ID: AZ-CLM-8842910 · Order 408-1234567-8901234</div>
+        <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
+          <div className="max-w-2xl">
+            <p className="inline-flex items-center gap-2 text-sm font-medium text-[rgb(var(--brand-dark))]">
+              <Gem size={14} strokeWidth={1.6} />
+              Claim resolution
+            </p>
+            <div className="mt-3 flex flex-wrap items-center gap-3">
+              <h1 className="text-4xl font-semibold leading-[1.08] tracking-tight text-slate-900 sm:text-5xl" style={serif}>
+                Resolve claim
+              </h1>
+              <span className="inline-flex items-center gap-1.5 rounded-[var(--radius-control)] bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-800 ring-1 ring-amber-200">
+                <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+                Action required
+              </span>
+            </div>
+            <p className="mt-4 max-w-xl text-sm leading-relaxed text-slate-600">
+              Claim ID: AZ-CLM-8842910, Order 408-1234567-8901234
+            </p>
+          </div>
+
+          <div className="flex divide-x divide-[rgb(var(--brand-line)/0.4)]">
+            <GlanceStat icon={Wallet} value="₹1,499" label="amount claimed" />
+            <GlanceStat icon={CalendarDays} value="14 Jul" label="claim filed" />
+            <GlanceStat icon={Clock} value="21 Jul" label="respond by" />
+          </div>
         </div>
-      </div>
+      </section>
 
-      <div className="deadline-banner">
-        <ClockIcon />
+      {/* Deadline banner */}
+      <div
+        role="alert"
+        className="flex items-start gap-3 rounded-[var(--radius-control)] border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800"
+      >
+        <AlertTriangle size={18} strokeWidth={1.6} className="mt-0.5 shrink-0" />
         <span>
-          <strong>Respond by 21 Jul 2026, 11:59 PM IST.</strong> If you don't respond in time, this claim will be automatically granted in the customer's favor.
+          <strong className="font-semibold">Respond by 21 Jul 2026, 11:59 PM IST.</strong> If you don't respond in time,
+          this claim will be automatically granted in the customer's favor.
         </span>
       </div>
 
       {submitted && (
-        <div className="success-banner">
-          <CheckCircle />
+        <div
+          role="status"
+          className="flex items-start gap-3 rounded-[var(--radius-control)] border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800"
+        >
+          <CheckCircle2 size={18} strokeWidth={1.6} className="mt-0.5 shrink-0" />
           Your response has been submitted. Amazon will review it and notify you of the outcome within 2 business days.
         </div>
       )}
 
-      <div className="layout">
+      <div className="grid items-start gap-6 lg:grid-cols-[2fr_1fr]">
         {/* LEFT COLUMN */}
-        <div>
-          <div className="card">
-            <h2>Claim summary</h2>
-            <div className="summary-grid">
-              <div className="summary-item">
-                <div className="label">Claim type</div>
-                <div className="value">A-to-z Guarantee claim</div>
-              </div>
-              <div className="summary-item">
-                <div className="label">Claim reason</div>
-                <div className="value">Item not as described</div>
-              </div>
-              <div className="summary-item">
-                <div className="label">Amount claimed</div>
-                <div className="value amount">₹1,499.00</div>
-              </div>
-              <div className="summary-item">
-                <div className="label">Claim filed on</div>
-                <div className="value">14 Jul 2026</div>
-              </div>
-              <div className="summary-item">
-                <div className="label">Order date</div>
-                <div className="value">3 Jul 2026</div>
-              </div>
-              <div className="summary-item">
-                <div className="label">Order ID</div>
-                <div className="value link">408-1234567-8901234</div>
-              </div>
-            </div>
-
-            <div className="product-row">
-              <div className="product-thumb">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-                  <rect x="3" y="3" width="18" height="18" rx="2" stroke="#B7BDC0" strokeWidth="1.5" />
-                  <path d="M3 15l5-5 4 4 5-6 4 5" stroke="#B7BDC0" strokeWidth="1.5" />
-                </svg>
-              </div>
-              <div className="product-detail">
-                <div className="name">Wireless Bluetooth Earbuds - Black</div>
-                <div className="meta">SKU: WBE-BLK-01 · ASIN: B0C9XXXXX3 · Qty: 1</div>
-              </div>
-            </div>
-          </div>
-
-          <div className="card">
-            <h2>Customer's statement</h2>
-            <p style={{ fontSize: 13, lineHeight: 1.6, color: "var(--amz-text)", margin: "0 0 4px 0" }}>
-              "The earbuds I received don't match the listing photos — the color is different and one earbud has no sound at all. I want a full refund."
-            </p>
-          </div>
-
-          <div className="card">
-            <h3>Evidence provided by customer</h3>
-            <div className="evidence-list">
-              <div className="evidence-item">
-                <FileIcon />
-                <span className="name">photo_earbud_defect.jpg</span>
-                <a href="#">View</a>
-              </div>
-              <div className="evidence-item">
-                <FileIcon />
-                <span className="name">order_screenshot.png</span>
-                <a href="#">View</a>
-              </div>
-            </div>
-          </div>
-
-          <div className="card">
-            <h2>Your response</h2>
-            <div className="option-list">
-              {RESPONSE_OPTIONS.map((opt) => (
-                <label
-                  key={opt.key}
-                  className={`option-card ${selectedOption === opt.key ? "selected" : ""}`}
-                >
-                  <input
-                    type="radio"
-                    name="response"
-                    checked={selectedOption === opt.key}
-                    onChange={() => setSelectedOption(opt.key)}
-                  />
-                  <div>
-                    <div className="option-title">{opt.title}</div>
-                    <div className="option-sub">{opt.sub}</div>
-                  </div>
-                </label>
+        <div className="space-y-6">
+          <Panel title="Claim summary">
+            <dl className="grid gap-x-8 gap-y-5 sm:grid-cols-2">
+              {SUMMARY_ITEMS.map((item) => (
+                <div key={item.label}>
+                  <dt className="text-xs text-slate-500">{item.label}</dt>
+                  <dd
+                    className={`mt-1 ${
+                      item.tone === "amount"
+                        ? "text-2xl font-semibold text-rose-700"
+                        : item.tone === "link"
+                        ? "cursor-pointer text-sm font-medium text-[rgb(var(--brand-text))] hover:underline"
+                        : "text-sm font-medium text-slate-900"
+                    }`}
+                    style={item.tone === "amount" ? serif : undefined}
+                  >
+                    {item.value}
+                  </dd>
+                </div>
               ))}
-            </div>
+            </dl>
 
-            <label className="field-label" htmlFor="comment">
+            <div className="mt-6 flex items-start gap-3 border-t border-stone-100 pt-5">
+              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[var(--radius-control)] border border-stone-200 bg-[rgb(var(--tint-50))] text-slate-400">
+                <ImageIcon size={20} strokeWidth={1.5} />
+              </span>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-slate-900">Wireless Bluetooth Earbuds - Black</p>
+                <p className="mt-0.5 text-xs text-slate-500">SKU: WBE-BLK-01, ASIN: B0C9XXXXX3, Qty: 1</p>
+              </div>
+            </div>
+          </Panel>
+
+          <Panel title="Customer's statement">
+            <blockquote className="border-l-4 border-[rgb(var(--brand-line))] pl-4 text-sm leading-relaxed text-slate-700">
+              "The earbuds I received don't match the listing photos — the color is different and one earbud has no sound
+              at all. I want a full refund."
+            </blockquote>
+          </Panel>
+
+          <Panel title="Evidence provided by customer">
+            <ul className="space-y-2">
+              {EVIDENCE.map((name) => (
+                <li
+                  key={name}
+                  className="flex items-center gap-3 rounded-[var(--radius-control)] border border-stone-200 px-3 py-2.5 text-sm transition-colors hover:bg-stone-50"
+                >
+                  <FileText size={16} strokeWidth={1.6} className="shrink-0 text-slate-400" />
+                  <span className="flex-1 truncate text-slate-800">{name}</span>
+                  <a href="#" className="text-xs font-medium text-[rgb(var(--brand-text))] hover:underline">
+                    View
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </Panel>
+
+          <Panel title="Your response">
+            <fieldset>
+              <legend className="sr-only">Choose how to respond</legend>
+              <div className="space-y-3">
+                {RESPONSE_OPTIONS.map((opt) => {
+                  const selected = selectedOption === opt.key;
+                  return (
+                    <label
+                      key={opt.key}
+                      className={`flex cursor-pointer items-start gap-3 rounded-[var(--radius-control)] border px-4 py-3 transition-colors focus-within:ring-2 focus-within:ring-[rgb(var(--brand-line))] ${
+                        selected
+                          ? "border-[rgb(var(--brand))] bg-[rgb(var(--tint-50))] ring-1 ring-[rgb(var(--brand))]"
+                          : "border-stone-200 hover:bg-stone-50"
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="response"
+                        checked={selected}
+                        onChange={() => setSelectedOption(opt.key)}
+                        className="mt-1 accent-[rgb(var(--brand))]"
+                      />
+                      <div>
+                        <div className="text-sm font-semibold text-slate-900">{opt.title}</div>
+                        <div className="mt-0.5 text-xs text-slate-500">{opt.sub}</div>
+                      </div>
+                    </label>
+                  );
+                })}
+              </div>
+            </fieldset>
+
+            <label htmlFor="comment" className="mt-6 block text-sm font-semibold text-slate-900">
               Explain your response
             </label>
             <textarea
@@ -525,67 +268,76 @@ export default function ResolveClaim() {
               value={comment}
               maxLength={maxChars}
               onChange={(e) => setComment(e.target.value)}
+              className="mt-2 min-h-[110px] w-full resize-y rounded-[var(--radius-control)] border border-stone-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus-visible:ring-2 focus-visible:ring-[rgb(var(--brand-line))]"
             />
-            <div className="char-count">{comment.length}/{maxChars}</div>
-
-            <label className="field-label">Upload supporting evidence (optional)</label>
-            <div className="upload-box">
-              <UploadIcon />
-              <div>Drag files here or click to upload</div>
-              <div className="upload-hint">PDF, JPG or PNG · Max 10MB per file</div>
+            <div className="mt-1 text-right text-xs text-slate-500">
+              {comment.length}/{maxChars}
             </div>
 
-            <div className="form-actions">
-              <button className="btn">Save as draft</button>
+            <p className="mt-5 text-sm font-semibold text-slate-900">Upload supporting evidence (optional)</p>
+            <div className="mt-2 cursor-pointer rounded-[var(--radius-control)] border-2 border-dashed border-stone-300 px-6 py-7 text-center text-sm text-slate-500 transition-colors hover:border-[rgb(var(--brand-line))] hover:bg-[rgb(var(--tint-50))]">
+              <UploadCloud size={26} strokeWidth={1.5} className="mx-auto mb-2 text-slate-400" />
+              <div>Drag files here or click to upload</div>
+              <div className="mt-0.5 text-xs">PDF, JPG or PNG, max 10MB per file</div>
+            </div>
+
+            <div className="mt-6 flex justify-end gap-3 border-t border-stone-100 pt-5">
               <button
-                className="btn btn-primary"
+                type="button"
+                className="rounded-[var(--radius-control)] border border-stone-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-stone-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[rgb(var(--brand-line))]"
+              >
+                Save as draft
+              </button>
+              <button
+                type="button"
                 disabled={comment.trim().length === 0}
                 onClick={() => setSubmitted(true)}
+                className="rounded-[var(--radius-control)] bg-gradient-to-br from-[rgb(var(--brand))] to-[rgb(var(--brand-dark))] px-4 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[rgb(var(--brand-line))] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Submit response
               </button>
             </div>
-          </div>
+          </Panel>
         </div>
 
         {/* RIGHT COLUMN */}
-        <div>
-          <div className="card">
-            <h2>Claim timeline</h2>
-            <div className="timeline">
-              <div className="timeline-item">
-                <div className="timeline-marker" />
-                <div className="timeline-content">
-                  <div className="timeline-title">Claim filed by customer</div>
-                  <div className="timeline-date">14 Jul 2026, 4:12 PM</div>
-                </div>
-              </div>
-              <div className="timeline-item">
-                <div className="timeline-marker" />
-                <div className="timeline-content">
-                  <div className="timeline-title">Amazon requested seller response</div>
-                  <div className="timeline-date">14 Jul 2026, 4:20 PM</div>
-                </div>
-              </div>
-              <div className="timeline-item">
-                <div className="timeline-marker" />
-                <div className="timeline-content">
-                  <div className="timeline-title">Awaiting your response</div>
-                  <div className="timeline-date">Due 21 Jul 2026</div>
-                </div>
-              </div>
-            </div>
-          </div>
+        <div className="space-y-6">
+          <Panel icon={Clock} title="Claim timeline">
+            <ol>
+              {TIMELINE.map((step, index) => {
+                const last = index === TIMELINE.length - 1;
+                return (
+                  <li key={step.title} className="relative flex gap-3 pb-6 last:pb-0">
+                    {!last && <span className="absolute left-[4px] top-4 h-full w-px bg-stone-200" aria-hidden="true" />}
+                    <span
+                      className={`relative z-10 mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full ${
+                        step.current ? "bg-[rgb(var(--brand))] ring-4 ring-[rgb(var(--tint-200))]" : "bg-slate-400"
+                      }`}
+                    />
+                    <div>
+                      <p className="text-sm font-medium text-slate-900">{step.title}</p>
+                      <p className="mt-0.5 text-xs text-slate-500">{step.date}</p>
+                    </div>
+                  </li>
+                );
+              })}
+            </ol>
+          </Panel>
 
-          <div className="card">
-            <h2>Need help?</h2>
-            <div className="sidebar-note">
-              Review the A-to-z Guarantee policy to understand what qualifies for seller protection before responding to this claim.
+          <Panel icon={LifeBuoy} title="Need help?">
+            <p className="text-sm leading-relaxed text-slate-600">
+              Review the A-to-z Guarantee policy to understand what qualifies for seller protection before responding to
+              this claim.
+            </p>
+            <div className="mt-3 flex flex-col gap-1.5 text-sm font-medium">
+              <a href="#" className="text-[rgb(var(--brand-text))] hover:underline">
+                Read A-to-z Guarantee policy →
+              </a>
+              <a href="#" className="text-[rgb(var(--brand-text))] hover:underline">
+                Contact Seller Support →
+              </a>
             </div>
-            <a className="policy-link" href="#">Read A-to-z Guarantee policy →</a>
-            <br />
-            <a className="policy-link" href="#">Contact Seller Support →</a>
-          </div>
+          </Panel>
         </div>
       </div>
     </div>

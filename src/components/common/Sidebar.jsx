@@ -8,10 +8,7 @@ import {
   LayoutDashboard,
   Package,
   PackageSearch,
-<<<<<<< HEAD
-=======
   Palette,
->>>>>>> b77933a (scss used in this)
   Settings,
   ShoppingCart,
   Store,
@@ -129,10 +126,7 @@ const navItems = [
   },
 
   { name: "Settings", path: "/admin/settings", icon: Settings, roles: ["Super Admin"] },
-<<<<<<< HEAD
-=======
   { name: "Appearance", path: "/vendor/settings", icon: Palette, roles: ["Vendor"] },
->>>>>>> b77933a (scss used in this)
  
   { name: "Customer Carts", path: "/vendor/cart", icon: ShoppingCart, roles: ["Vendor"] },
 ];

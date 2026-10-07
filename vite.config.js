@@ -2,8 +2,9 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 
-// `npm run dev` has no Vercel runtime, so this tiny plugin serves /api/settings/theme with the
-// same handler used in production (api/settings/theme.js), storing the theme in .theme-data/.
+// `npm run dev` has no Vercel runtime, so this tiny plugin serves /api/settings/theme and
+// /api/theme-css with the same handlers used in production (api/settings/theme.js and
+// api/theme-css.js), storing the theme in .theme-data/.
 const themeApiDev = () => ({
   name: "theme-api-dev",
   configureServer(server) {
@@ -11,13 +12,10 @@ const themeApiDev = () => ({
       const { default: handler } = await server.ssrLoadModule("/api/settings/theme.js");
       await handler(req, res);
     });
-<<<<<<< HEAD
-=======
     server.middlewares.use("/api/theme-css", async (req, res) => {
       const { default: handler } = await server.ssrLoadModule("/api/theme-css.js");
       await handler(req, res);
     });
->>>>>>> b77933a (scss used in this)
   },
 });
 

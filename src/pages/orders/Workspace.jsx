@@ -1,43 +1,119 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { PackageCheck, Clock3, Undo2 } from "lucide-react";
 import { apiUrl } from "../../config/api";
 
+/* =========================================================
+   THEME — driven by the same CSS variables as Dashboard,
+   Inventory, Attributes and Banners (--brand, --hero-*,
+   --tint-*, etc.). Fallback values are used only if a
+   variable isn't defined.
+   ========================================================= */
 const styles = `
 .orders-workspace {
-  --amz-blue: #007185;
-  --amz-text: #0f1111;
-  --amz-text-secondary: #565959;
-  --amz-border: #d5d9d9;
-  --amz-bg: #eaeded;
-  --amz-card-bg: #ffffff;
-  --amz-green: #067d62;
-  --amz-red: #d13212;
-  --amz-amber: #b45309;
+  --accent: rgb(var(--brand, 180 120 20));
+  --accent-dark: rgb(var(--brand-dark, 140 90 10));
+  --accent-text: rgb(var(--brand-text, 140 90 10));
+  --accent-soft: rgb(var(--tint-100, 250 243 224));
+  --accent-dim: rgb(var(--brand-line, 200 160 80) / 0.55);
+  --line: rgb(var(--brand-line, 200 160 80));
+  --bg: rgb(var(--page-bg, 247 245 240));
+  --surface: #ffffff;
+  --border: #e7e5e4;
+  --border-soft: #f1efec;
+  --ink: #0f172a;
+  --ink-dim: #475569;
+  --ink-faint: #94a3b8;
+  --ok: #065f46;
+  --rose: #9f1239;
+  --radius-c: var(--radius-card, 14px);
+  --radius-k: var(--radius-control, 8px);
+  --display: var(--font-display, Georgia, serif);
 
-  font-family: "Amazon Ember", Arial, sans-serif;
-  background: var(--amz-bg);
-  color: var(--amz-text);
+  background: var(--bg);
+  color: var(--ink);
   padding: 24px;
+  min-height: 100vh;
 }
 .orders-workspace * { box-sizing: border-box; }
+.orders-workspace a:focus-visible,
+.orders-workspace button:focus-visible,
+.orders-workspace .card:focus-visible { outline: 2px solid var(--line); outline-offset: 2px; }
 
-.orders-workspace .page-header {
+/* hero — same look as the other pages */
+.orders-workspace .hero {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+  padding: 32px 36px;
+  border-radius: var(--radius-c);
+  background: linear-gradient(135deg, rgb(var(--hero-a, 253 248 235)), rgb(var(--hero-b, 250 240 215)), rgb(var(--hero-c, 247 232 195)));
+  box-shadow: 0 0 0 1px rgb(var(--brand-line, 200 160 80) / 0.4);
+}
+.orders-workspace .gold-line {
+  position: absolute;
+  top: 0;
+  height: 1px;
+  pointer-events: none;
+  background: linear-gradient(to right, transparent, var(--line), transparent);
+}
+.orders-workspace .hero .gold-line { left: 64px; right: 64px; }
+.orders-workspace .card .gold-line { left: 40px; right: 40px; }
+.orders-workspace .hero-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--accent-dark);
+}
+.orders-workspace .hero h1 {
+  margin: 8px 0 0;
+  font-family: var(--display);
+  font-size: 34px;
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+.orders-workspace .hero-copy {
+  margin: 10px 0 0;
+  max-width: 520px;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: #475569;
+}
+.orders-workspace .glance { display: flex; flex-wrap: wrap; row-gap: 14px; }
+.orders-workspace .glance-stat {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  margin-bottom: 16px;
+  gap: 12px;
+  padding: 0 20px;
+  border-left: 1px solid rgb(var(--brand-line, 200 160 80) / 0.4);
+  color: var(--accent-text);
 }
-.orders-workspace .page-header h1 {
-  font-size: 22px;
-  font-weight: 700;
-  margin: 0;
+.orders-workspace .glance-stat:first-child { padding-left: 0; border-left: none; }
+.orders-workspace .glance-stat:last-child { padding-right: 0; }
+.orders-workspace .glance-stat strong {
+  display: block;
+  font-family: var(--display);
+  font-size: 26px;
+  line-height: 1;
+  font-weight: 600;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
 }
-.orders-workspace .canvas-link {
-  color: var(--amz-blue);
-  font-size: 13px;
-  text-decoration: none;
-  cursor: pointer;
+.orders-workspace .glance-stat span {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  color: #64748b;
 }
-.orders-workspace .canvas-link:hover { text-decoration: underline; }
 
 /* fixed 2x2 grid of big cards */
 .orders-workspace .grid {
@@ -46,30 +122,26 @@ const styles = `
   gap: 20px;
 }
 @media (max-width: 760px) {
+  .orders-workspace { padding: 16px; }
   .orders-workspace .grid { grid-template-columns: 1fr; }
+  .orders-workspace .hero { padding: 24px 20px; }
+  .orders-workspace .hero h1 { font-size: 28px; }
 }
 
 .orders-workspace .card {
-  background: var(--amz-card-bg);
-  border: 1px solid var(--amz-border);
-  border-radius: 10px;
-  padding: 20px 22px;
   position: relative;
   display: flex;
   flex-direction: column;
   min-height: 360px;
-  transition: box-shadow 0.16s ease, transform 0.16s ease, opacity 0.16s ease, border-color 0.16s ease;
+  padding: 20px 22px;
+  background: var(--surface);
+  border-radius: var(--radius-c);
+  box-shadow: 0 0 0 1px #e7e5e4;
+  transition: box-shadow 0.16s ease, opacity 0.16s ease;
 }
-.orders-workspace .card.is-dragging {
-  opacity: 0.35;
-}
-.orders-workspace .card.is-drag-over {
-  border-color: var(--amz-blue);
-  box-shadow: 0 0 0 2px rgba(0, 113, 133, 0.35) inset;
-}
-.orders-workspace .card:hover {
-  box-shadow: 0 2px 10px rgba(15, 17, 17, 0.08);
-}
+.orders-workspace .card:hover { box-shadow: 0 0 0 1px var(--accent-dim), 0 6px 16px rgba(15, 23, 42, 0.07); }
+.orders-workspace .card.is-dragging { opacity: 0.35; }
+.orders-workspace .card.is-drag-over { box-shadow: 0 0 0 2px var(--accent); }
 
 .orders-workspace .card-header {
   display: flex;
@@ -78,65 +150,62 @@ const styles = `
   margin-bottom: 2px;
 }
 .orders-workspace .card-title {
-  font-size: 17px;
-  font-weight: 700;
-  color: var(--amz-text);
   margin: 0;
+  font-family: var(--display);
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--ink);
 }
 .orders-workspace .drag-handle {
-  cursor: grab;
-  color: #8b9195;
   width: 18px;
   height: 18px;
   flex-shrink: 0;
-  padding: 4px;
   margin: -4px;
-  border-radius: 4px;
+  padding: 4px;
+  border-radius: var(--radius-k);
+  color: var(--ink-faint);
+  cursor: grab;
   transition: background 0.12s ease, color 0.12s ease;
 }
-.orders-workspace .drag-handle:hover {
-  background: #f0f2f2;
-  color: #565959;
-}
-.orders-workspace .drag-handle:active {
-  cursor: grabbing;
-}
+.orders-workspace .drag-handle:hover { background: var(--accent-soft); color: var(--accent-text); }
+.orders-workspace .drag-handle:active { cursor: grabbing; }
 .orders-workspace .card-link {
-  font-size: 13px;
-  color: var(--amz-blue);
-  text-decoration: none;
   display: inline-block;
   margin: 2px 0 14px 0;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--accent-text);
+  text-decoration: none;
 }
 .orders-workspace .card-link:hover { text-decoration: underline; }
 
 .orders-workspace .period-row {
-  font-size: 12px;
-  color: var(--amz-text-secondary);
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 6px;
   margin-bottom: 12px;
-  flex-wrap: wrap;
+  font-size: 12px;
+  color: var(--ink-dim);
 }
 .orders-workspace .pill {
-  border: 1px solid var(--amz-border);
-  border-radius: 14px;
   padding: 3px 11px;
-  font-size: 12px;
-  color: var(--amz-text);
+  border: 1px solid #d6d3d1;
+  border-radius: var(--radius-k);
   background: #fff;
+  font-size: 12px;
+  color: var(--ink);
   cursor: pointer;
 }
 .orders-workspace .checkbox-row {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 12px;
-  color: var(--amz-text);
   margin-bottom: 12px;
+  font-size: 12.5px;
+  color: var(--ink);
 }
-.orders-workspace .checkbox-row input { margin: 0; }
+.orders-workspace .checkbox-row input { margin: 0; accent-color: var(--accent); }
 
 .orders-workspace .empty-state {
   flex: 1;
@@ -144,73 +213,62 @@ const styles = `
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  text-align: center;
-  color: var(--amz-text-secondary);
   padding: 12px 8px;
+  text-align: center;
+  color: var(--ink-dim);
 }
-.orders-workspace .empty-state .empty-icon {
-  width: 64px;
-  height: 64px;
-  margin-bottom: 12px;
-  opacity: 0.55;
-}
+.orders-workspace .empty-state .empty-icon { width: 64px; height: 64px; margin-bottom: 12px; opacity: 0.55; }
 .orders-workspace .empty-state .empty-title {
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--amz-text);
   margin-bottom: 4px;
+  font-family: var(--display);
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--ink);
 }
-.orders-workspace .empty-state .empty-sub {
-  font-size: 12px;
-  color: var(--amz-text-secondary);
-  max-width: 260px;
-}
+.orders-workspace .empty-state .empty-sub { max-width: 260px; font-size: 12.5px; color: var(--ink-dim); }
 
 .orders-workspace .state-msg {
   flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 12px 8px;
   text-align: center;
   font-size: 13px;
-  color: var(--amz-text-secondary);
-  padding: 12px 8px;
+  color: var(--ink-dim);
 }
-.orders-workspace .state-msg.is-error { color: var(--amz-red); }
+.orders-workspace .state-msg.is-error { color: var(--rose); }
 
-.orders-workspace .stat-list {
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-  margin-top: 6px;
-}
+.orders-workspace .stat-list { display: flex; flex-direction: column; gap: 18px; margin-top: 6px; }
 .orders-workspace .stat-row {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  border-bottom: 1px solid #f0f2f2;
   padding-bottom: 14px;
+  border-bottom: 1px solid var(--border-soft);
 }
-.orders-workspace .stat-row:last-child { border-bottom: none; padding-bottom: 0; }
-.orders-workspace .stat-label { font-size: 14px; color: var(--amz-text); }
+.orders-workspace .stat-row:last-child { padding-bottom: 0; border-bottom: none; }
+.orders-workspace .stat-label { font-size: 14px; color: var(--ink); }
 .orders-workspace .stat-value {
-  font-size: 20px;
-  font-weight: 700;
-  color: var(--amz-blue);
-  text-decoration: none;
-  background: none;
-  border: none;
-  cursor: pointer;
   padding: 0;
+  border: none;
+  background: none;
+  font-family: var(--display);
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--accent-text);
+  text-decoration: none;
+  cursor: pointer;
+  font-variant-numeric: tabular-nums;
 }
 .orders-workspace .stat-value:hover { text-decoration: underline; }
 .orders-workspace .stat-sub {
-  font-size: 11px;
-  color: var(--amz-text-secondary);
   display: block;
-  text-align: right;
   margin-top: 2px;
+  font-size: 11.5px;
   font-weight: 400;
+  text-align: right;
+  color: var(--ink-dim);
 }
 
 .orders-workspace .success-box {
@@ -219,81 +277,65 @@ const styles = `
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  text-align: center;
   gap: 12px;
+  text-align: center;
 }
 .orders-workspace .success-icon {
-  width: 52px;
-  height: 52px;
-  border-radius: 50%;
-  background: #f0fbf6;
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: #ecfdf5;
 }
 .orders-workspace .success-icon svg { width: 28px; height: 28px; }
-.orders-workspace .success-text {
-  font-size: 14px;
-  color: var(--amz-text);
-  max-width: 260px;
-}
+.orders-workspace .success-text { max-width: 260px; font-size: 14px; color: var(--ink); }
 
-.orders-workspace .order-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin-top: 2px;
-  overflow-y: auto;
-}
+.orders-workspace .order-list { display: flex; flex-direction: column; gap: 12px; margin-top: 2px; overflow-y: auto; }
 .orders-workspace .order-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  border-bottom: 1px solid #f0f2f2;
   padding-bottom: 11px;
+  border-bottom: 1px solid var(--border-soft);
 }
-.orders-workspace .order-row:last-child { border-bottom: none; padding-bottom: 0; }
+.orders-workspace .order-row:last-child { padding-bottom: 0; border-bottom: none; }
 .orders-workspace .order-main { min-width: 0; }
 .orders-workspace .order-id {
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--amz-blue);
-  text-decoration: none;
   display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--accent-text);
+  text-decoration: none;
 }
 .orders-workspace .order-id:hover { text-decoration: underline; }
 .orders-workspace .order-meta {
-  font-size: 12px;
-  color: var(--amz-text-secondary);
-  white-space: nowrap;
   overflow: hidden;
+  font-size: 12px;
+  color: var(--ink-dim);
+  white-space: nowrap;
   text-overflow: ellipsis;
 }
-.orders-workspace .order-right {
-  text-align: right;
-  flex-shrink: 0;
-}
+.orders-workspace .order-right { flex-shrink: 0; text-align: right; }
 .orders-workspace .order-total {
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--amz-text);
+  font-family: var(--display);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
 }
 .orders-workspace .order-pill {
   display: inline-block;
   margin-top: 4px;
-  font-size: 11px;
-  font-weight: 700;
   padding: 2px 8px;
-  border-radius: 10px;
+  border-radius: var(--radius-k);
+  font-size: 11px;
+  font-weight: 600;
 }
 
-.orders-workspace .rates-list {
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-  margin-top: 12px;
-}
+.orders-workspace .rates-list { display: flex; flex-direction: column; gap: 18px; margin-top: 12px; }
 
 .orders-workspace .drop-caret {
   position: absolute;
@@ -302,19 +344,23 @@ const styles = `
   right: 20px;
   height: 3px;
   border-radius: 2px;
-  background: var(--amz-blue);
+  background: linear-gradient(to right, var(--accent), var(--accent-dark));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .orders-workspace .card, .orders-workspace .drag-handle { transition: none; }
 }
 `;
 
 // status -> small pill used on individual order rows
 const ORDER_STATUS_META = {
-  requested: { label: "Pending", bg: "#fef3e2", color: "#b45309" },
-  pending: { label: "Pending", bg: "#fef3e2", color: "#b45309" },
-  approved: { label: "Approved", bg: "#f0fbf6", color: "#067d62" },
-  transit: { label: "In transit", bg: "#eaf6fd", color: "#0972d3" },
-  in_transit: { label: "In transit", bg: "#eaf6fd", color: "#0972d3" },
-  completed: { label: "Completed", bg: "#f0fbf6", color: "#067d62" },
-  rejected: { label: "Rejected", bg: "#fdf0ef", color: "#d13212" },
+  requested: { label: "Pending", bg: "#fef3c7", color: "#92400e" },
+  pending: { label: "Pending", bg: "#fef3c7", color: "#92400e" },
+  approved: { label: "Approved", bg: "#d1fae5", color: "#065f46" },
+  transit: { label: "In transit", bg: "#e0f2fe", color: "#075985" },
+  in_transit: { label: "In transit", bg: "#e0f2fe", color: "#075985" },
+  completed: { label: "Completed", bg: "#d1fae5", color: "#065f46" },
+  rejected: { label: "Rejected", bg: "#ffe4e6", color: "#9f1239" },
 };
 
 const CARD_ORDER_STORAGE_KEY = "ordersWorkspaceCardOrder";
@@ -502,6 +548,7 @@ function CardShell({ title, headerLink, children, cardKey, dragState, dragHandle
       onDragLeave={() => onDragLeave(cardKey)}
       onDrop={(e) => onDrop(e, cardKey)}
     >
+      <span className="gold-line" />
       {isDragOver && <div className="drop-caret" />}
       <div className="card-header">
         <p className="card-title">{title}</p>
@@ -559,7 +606,7 @@ function OrdersCard(props) {
       ) : (
         <div className="order-list">
           {recent.map((o) => {
-            const meta = ORDER_STATUS_META[o.status] || { label: o.status || "Unknown", bg: "#f2f4f4", color: "#565959" };
+            const meta = ORDER_STATUS_META[o.status] || { label: o.status || "Unknown", bg: "#f5f5f4", color: "#475569" };
             return (
               <div className="order-row" key={o.id}>
                 <div className="order-main">
@@ -655,7 +702,7 @@ function ClaimsCard(props) {
       <div className="success-box">
         <div className="success-icon">
           <svg viewBox="0 0 24 24" fill="none">
-            <circle cx="12" cy="12" r="11" fill="#067D62" />
+            <circle cx="12" cy="12" r="11" fill="#047857" />
             <path d="M7 12.5l3 3 7-7" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </div>
@@ -727,6 +774,13 @@ export default function OrdersWorkspace() {
     setCardOrder(loadStoredCardOrder());
   }, []);
 
+  // hero numbers — derived from the same records the cards already use
+  const heroStats = useMemo(() => {
+    const orderCount = groupIntoOrders(records).length;
+    const pending = records.filter((r) => ["requested", "pending"].includes((r.status || "").toLowerCase())).length;
+    return { orderCount, pending, returns: records.length };
+  }, [records]);
+
   function persistOrder(next) {
     setCardOrder(next);
     try {
@@ -782,12 +836,43 @@ export default function OrdersWorkspace() {
   return (
     <div className="orders-workspace" ref={dragImageRef}>
       <style>{styles}</style>
-      <div className="page-header">
-        <h1>Orders</h1>
-        <a className="canvas-link" href="#">
-          ✎ Explore with a canvas
-        </a>
-      </div>
+
+      <section className="hero">
+        <span className="gold-line" />
+        <div>
+          <p className="hero-kicker">
+            <PackageCheck size={14} strokeWidth={1.6} />
+            Order management
+          </p>
+          <h1>Orders</h1>
+          <p className="hero-copy">
+            Track recent orders, returns and delivery performance in one place. Drag the cards to arrange them your way.
+          </p>
+        </div>
+        <div className="glance">
+          <div className="glance-stat">
+            <PackageCheck size={18} strokeWidth={1.5} />
+            <div>
+              <strong>{loading ? "—" : heroStats.orderCount}</strong>
+              <span>orders</span>
+            </div>
+          </div>
+          <div className="glance-stat">
+            <Clock3 size={18} strokeWidth={1.5} />
+            <div>
+              <strong>{loading ? "—" : heroStats.pending}</strong>
+              <span>pending actions</span>
+            </div>
+          </div>
+          <div className="glance-stat">
+            <Undo2 size={18} strokeWidth={1.5} />
+            <div>
+              <strong>{loading ? "—" : heroStats.returns}</strong>
+              <span>total returns</span>
+            </div>
+          </div>
+        </div>
+      </section>
 
       <div className="grid">
         {cardOrder.map((key) => {

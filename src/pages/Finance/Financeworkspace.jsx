@@ -1,286 +1,52 @@
-import React from "react";
+import React, { useState } from "react";
+import {
+  Banknote,
+  CalendarClock,
+  GripVertical,
+  Info,
+  Landmark,
+  Gem,
+  PieChart,
+  ReceiptText,
+  RotateCw,
+  TrendingUp,
+  Wallet,
+  AlertCircle,
+  Lock,
+} from "lucide-react";
 
-const styles = `
-.finance-workspace {
-  --amz-blue: #007185;
-  --amz-blue-dark: #003553;
-  --amz-text: #0f1111;
-  --amz-text-secondary: #565959;
-  --amz-border: #d5d9d9;
-  --amz-bg: #eaeded;
-  --amz-card-bg: #ffffff;
-  --amz-green: #067d62;
-  --amz-green-bg: #f0fbf6;
-  --amz-orange: #e47911;
-  --amz-orange-bg: #fef4e8;
-  --amz-red: #b12704;
-  --amz-red-bg: #fdf1f0;
+/* ---------- design tokens (same CSS variables as the Dashboard) ---------- */
 
-  font-family: "Amazon Ember", Arial, sans-serif;
-  background: var(--amz-bg);
-  color: var(--amz-text);
-  padding: 24px;
-  min-height: 100vh;
-}
-.finance-workspace * { box-sizing: border-box; }
+const serif = { fontFamily: "var(--font-display)" };
+const gold = "text-[rgb(var(--brand-on-dark))]";
 
-.finance-workspace .page-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 16px;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-.finance-workspace .page-header h1 {
-  font-size: 21px;
-  font-weight: 700;
-  margin: 0;
-}
-.finance-workspace .canvas-link {
-  color: var(--amz-blue);
-  font-size: 13px;
-  text-decoration: none;
-  cursor: pointer;
-}
-.finance-workspace .canvas-link:hover { text-decoration: underline; }
+const palettes = [
+  {
+    front: "from-[rgb(var(--a1-f1))] via-[rgb(var(--a1-f2))] to-[rgb(var(--a1-f3))]",
+    back: "from-[rgb(var(--a1-b1))] to-[rgb(var(--a1-b2))]",
+    chip: "from-[rgb(var(--a1))] to-[rgb(var(--a1-dark))]",
+  },
+  {
+    front: "from-[rgb(var(--a2-f1))] via-[rgb(var(--a2-f2))] to-[rgb(var(--a2-f3))]",
+    back: "from-[rgb(var(--a2-b1))] to-[rgb(var(--a2-b2))]",
+    chip: "from-[rgb(var(--a2))] to-[rgb(var(--a2-dark))]",
+  },
+  {
+    front: "from-[rgb(var(--a3-f1))] via-[rgb(var(--a3-f2))] to-[rgb(var(--a3-f3))]",
+    back: "from-[rgb(var(--a3-b1))] to-[rgb(var(--a3-b2))]",
+    chip: "from-[rgb(var(--a3))] to-[rgb(var(--a3-dark))]",
+  },
+  {
+    front: "from-[rgb(var(--tint-100))] via-[rgb(var(--tint-200))] to-[rgb(var(--tint-300))]",
+    back: "from-[rgb(var(--p4-b1))] to-[rgb(var(--p4-b2))]",
+    chip: "from-[rgb(var(--brand))] to-[rgb(var(--brand-dark))]",
+  },
+];
 
-/* top summary strip */
-.finance-workspace .summary-strip {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
-  margin-bottom: 16px;
-}
-@media (max-width: 1000px) {
-  .finance-workspace .summary-strip { grid-template-columns: repeat(2, 1fr); }
-}
-@media (max-width: 560px) {
-  .finance-workspace .summary-strip { grid-template-columns: 1fr; }
-}
-.finance-workspace .summary-card {
-  background: var(--amz-card-bg);
-  border: 1px solid var(--amz-border);
-  border-radius: 8px;
-  padding: 16px;
-}
-.finance-workspace .summary-card .label {
-  font-size: 12px;
-  color: var(--amz-text-secondary);
-  margin-bottom: 6px;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
-.finance-workspace .summary-card .amount {
-  font-size: 22px;
-  font-weight: 700;
-  color: var(--amz-text);
-  margin-bottom: 4px;
-}
-.finance-workspace .summary-card .amount.positive { color: var(--amz-green); }
-.finance-workspace .summary-card .amount.negative { color: var(--amz-red); }
-.finance-workspace .summary-card .sub {
-  font-size: 12px;
-  color: var(--amz-text-secondary);
-}
-.finance-workspace .summary-card .sub a {
-  color: var(--amz-blue);
-  text-decoration: none;
-}
-.finance-workspace .summary-card .sub a:hover { text-decoration: underline; }
+/* Solid palette colours for charts (same as Dashboard). */
+const solids = ["rgb(var(--a1))", "rgb(var(--a2))", "rgb(var(--a3))", "rgb(var(--brand))"];
 
-/* main grid */
-.finance-workspace .grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
-  margin-bottom: 16px;
-}
-@media (max-width: 900px) {
-  .finance-workspace .grid { grid-template-columns: 1fr; }
-}
-
-.finance-workspace .card {
-  background: var(--amz-card-bg);
-  border: 1px solid var(--amz-border);
-  border-radius: 8px;
-  padding: 16px;
-  position: relative;
-  display: flex;
-  flex-direction: column;
-}
-.finance-workspace .card-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  margin-bottom: 2px;
-}
-.finance-workspace .card-title {
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--amz-text);
-  margin: 0;
-}
-.finance-workspace .card-link {
-  font-size: 13px;
-  color: var(--amz-blue);
-  text-decoration: none;
-  display: inline-block;
-  margin: 2px 0 12px 0;
-}
-.finance-workspace .card-link:hover { text-decoration: underline; }
-.finance-workspace .drag-handle {
-  cursor: grab;
-  color: #8b9195;
-  width: 16px;
-  height: 16px;
-  flex-shrink: 0;
-}
-
-/* bar chart (payout trend) */
-.finance-workspace .bar-chart {
-  display: flex;
-  align-items: flex-end;
-  gap: 10px;
-  height: 140px;
-  padding: 10px 4px 0 4px;
-}
-.finance-workspace .bar-col {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  height: 100%;
-  justify-content: flex-end;
-}
-.finance-workspace .bar {
-  width: 100%;
-  max-width: 34px;
-  border-radius: 4px 4px 0 0;
-  background: var(--amz-blue);
-}
-.finance-workspace .bar.muted { background: #c9e7ea; }
-.finance-workspace .bar-label {
-  font-size: 11px;
-  color: var(--amz-text-secondary);
-}
-
-/* fee breakdown list */
-.finance-workspace .breakdown-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-.finance-workspace .breakdown-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.finance-workspace .breakdown-row .dot {
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-.finance-workspace .breakdown-row .name {
-  flex: 1;
-  font-size: 13px;
-  color: var(--amz-text);
-}
-.finance-workspace .breakdown-row .value {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--amz-text);
-}
-.finance-workspace .breakdown-bar-track {
-  height: 6px;
-  border-radius: 3px;
-  background: #f0f2f2;
-  margin-top: 14px;
-  overflow: hidden;
-  display: flex;
-}
-.finance-workspace .breakdown-bar-seg { height: 100%; }
-
-/* transactions table */
-.finance-workspace .table-card {
-  background: var(--amz-card-bg);
-  border: 1px solid var(--amz-border);
-  border-radius: 8px;
-  overflow: hidden;
-}
-.finance-workspace .table-card .card-header {
-  padding: 16px 16px 0 16px;
-}
-.finance-workspace table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13px;
-  margin-top: 12px;
-}
-.finance-workspace thead th {
-  text-align: left;
-  padding: 10px 16px;
-  background: #f7f8f8;
-  color: var(--amz-text-secondary);
-  font-weight: 700;
-  font-size: 12px;
-  border-top: 1px solid var(--amz-border);
-  border-bottom: 1px solid var(--amz-border);
-  white-space: nowrap;
-}
-.finance-workspace tbody td {
-  padding: 12px 16px;
-  border-bottom: 1px solid #f0f2f2;
-  color: var(--amz-text);
-}
-.finance-workspace tbody tr:last-child td { border-bottom: none; }
-.finance-workspace tbody tr:hover { background: #fafafa; }
-
-.finance-workspace .txn-type {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 3px 10px;
-  border-radius: 12px;
-  font-size: 12px;
-  font-weight: 600;
-}
-.finance-workspace .txn-type.credit { background: var(--amz-green-bg); color: var(--amz-green); }
-.finance-workspace .txn-type.debit { background: var(--amz-red-bg); color: var(--amz-red); }
-.finance-workspace .txn-type.pending { background: var(--amz-orange-bg); color: #8a5a00; }
-
-.finance-workspace .amount-cell { font-weight: 700; }
-.finance-workspace .amount-cell.positive { color: var(--amz-green); }
-.finance-workspace .amount-cell.negative { color: var(--amz-red); }
-
-.finance-workspace .table-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 16px;
-  font-size: 12px;
-  color: var(--amz-text-secondary);
-}
-`;
-
-const InfoIcon = () => (
-  <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-    <circle cx="6.5" cy="6.5" r="5.8" stroke="#8B9195" strokeWidth="1.1" />
-    <path d="M6.5 5.8V9.5" stroke="#8B9195" strokeWidth="1.1" strokeLinecap="round" />
-    <circle cx="6.5" cy="4" r="0.7" fill="#8B9195" />
-  </svg>
-);
-
-const DragHandle = () => (
-  <svg viewBox="0 0 16 16" fill="currentColor" className="drag-handle" aria-hidden="true">
-    <circle cx="5" cy="3" r="1.3" /><circle cx="11" cy="3" r="1.3" />
-    <circle cx="5" cy="8" r="1.3" /><circle cx="11" cy="8" r="1.3" />
-    <circle cx="5" cy="13" r="1.3" /><circle cx="11" cy="13" r="1.3" />
-  </svg>
-);
+/* ---------- data (unchanged) ---------- */
 
 const PAYOUT_TREND = [
   { label: "Feb", value: 62, muted: true },
@@ -292,10 +58,10 @@ const PAYOUT_TREND = [
 ];
 
 const FEE_BREAKDOWN = [
-  { name: "Referral fees", value: "₹18,420", pct: 42, color: "#007185" },
-  { name: "Fulfilment fees", value: "₹12,860", pct: 29, color: "#e47911" },
-  { name: "Storage fees", value: "₹6,240", pct: 14, color: "#7e57c2" },
-  { name: "Advertising spend", value: "₹6,680", pct: 15, color: "#c9c9c9" },
+  { name: "Referral fees", value: "₹18,420", pct: 42 },
+  { name: "Fulfilment fees", value: "₹12,860", pct: 29 },
+  { name: "Storage fees", value: "₹6,240", pct: 14 },
+  { name: "Advertising spend", value: "₹6,680", pct: 15 },
 ];
 
 const TRANSACTIONS = [
@@ -306,132 +72,380 @@ const TRANSACTIONS = [
   { date: "12 Jul 2026", desc: "Scheduled disbursement to bank ••1234", type: "pending", label: "Pending", amount: "₹42,180.00" },
 ];
 
+const txnPill = {
+  credit: "bg-emerald-50 text-emerald-800 ring-emerald-200",
+  debit: "bg-rose-50 text-rose-800 ring-rose-200",
+  pending: "bg-amber-50 text-amber-800 ring-amber-200",
+};
+
+const SUMMARY = [
+  {
+    label: "Available balance",
+    value: "₹42,180.00",
+    icon: Wallet,
+    palette: palettes[0],
+    helper: "View balance details",
+    backTitle: "Balance details",
+    backRows: [
+      { label: "Available now", value: "₹42,180.00", valueClass: gold },
+      { label: "Reserved", value: "₹5,640.00" },
+      { label: "Unresolved fees", value: "₹0.00" },
+    ],
+  },
+  {
+    label: "Next disbursement",
+    value: "₹42,180.00",
+    icon: CalendarClock,
+    palette: palettes[1],
+    helper: "Scheduled for 20 Jul 2026",
+    backTitle: "Payout schedule",
+    backRows: [
+      { label: "Amount", value: "₹42,180.00", valueClass: gold },
+      { label: "Date", value: "20 Jul 2026" },
+      { label: "Bank account", value: "••1234" },
+    ],
+  },
+  {
+    label: "Reserved balance",
+    value: "₹5,640.00",
+    icon: Lock,
+    palette: palettes[2],
+    helper: "Why is this reserved?",
+    backTitle: "About reserves",
+    backRows: [
+      { label: "Held amount", value: "₹5,640.00", valueClass: gold },
+      { label: "Purpose", value: "Pending claims" },
+    ],
+  },
+  {
+    label: "Unresolved fees",
+    value: "₹0.00",
+    icon: AlertCircle,
+    palette: palettes[3],
+    helper: "No fees pending action",
+    backTitle: "Fee status",
+    backRows: [
+      { label: "Pending action", value: "None", valueClass: gold },
+      { label: "Fees, last 30 days", value: "₹44,200" },
+    ],
+  },
+];
+
+/* ---------- building blocks (same look as Dashboard) ---------- */
+
+function GoldLine({ className = "inset-x-10" }) {
+  return (
+    <span
+      className={`pointer-events-none absolute top-0 h-px bg-gradient-to-r from-transparent via-[rgb(var(--brand-line))] to-transparent ${className}`}
+    />
+  );
+}
+
+function FlipCard({ label, palette, front, back, className = "h-44" }) {
+  const [flipped, setFlipped] = useState(false);
+
+  return (
+    <div
+      className={`${className} transition-transform duration-300 hover:-translate-y-0.5 motion-reduce:transition-none motion-reduce:hover:translate-y-0`}
+      style={{ perspective: "1400px" }}
+    >
+      <button
+        type="button"
+        aria-pressed={flipped}
+        aria-label={`${label}: ${flipped ? "show summary" : "show details"}`}
+        onClick={() => setFlipped((value) => !value)}
+        className="relative block h-full w-full rounded-[var(--radius-card)] text-left transition-transform duration-[800ms] ease-out focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[rgb(var(--brand-line))] motion-reduce:transition-none"
+        style={{
+          transformStyle: "preserve-3d",
+          transform: flipped ? "rotateY(180deg)" : "rotateY(0deg)",
+        }}
+      >
+        <span
+          aria-hidden={flipped}
+          className={`absolute inset-0 flex flex-col overflow-hidden rounded-[var(--radius-card)] bg-gradient-to-br ${palette.front} p-5 text-slate-900 ring-1 ring-[rgb(var(--brand-line)/0.35)]`}
+          style={{ backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden" }}
+        >
+          <GoldLine />
+          <span className="relative flex h-full flex-col">{front}</span>
+          <RotateCw size={12} className="absolute bottom-4 right-4 text-slate-400" aria-hidden="true" />
+        </span>
+
+        <span
+          aria-hidden={!flipped}
+          className={`absolute inset-0 flex flex-col overflow-hidden rounded-[var(--radius-card)] bg-gradient-to-br ${palette.back} p-5 text-white ring-1 ring-[rgb(var(--brand-line)/0.5)]`}
+          style={{
+            backfaceVisibility: "hidden",
+            WebkitBackfaceVisibility: "hidden",
+            transform: "rotateY(180deg)",
+          }}
+        >
+          <GoldLine />
+          <span className="relative flex h-full flex-col">{back}</span>
+        </span>
+      </button>
+    </div>
+  );
+}
+
+function IconChip({ icon: Icon, palette, size = 18 }) {
+  return (
+    <span className={`flex h-9 w-9 items-center justify-center rounded-[var(--radius-control)] bg-gradient-to-br ${palette.chip} text-white`}>
+      <Icon size={size} strokeWidth={1.6} />
+    </span>
+  );
+}
+
+function BackTitle({ children }) {
+  return (
+    <span className={`mb-2 block text-xl font-semibold leading-tight ${gold}`} style={serif}>
+      {children}
+    </span>
+  );
+}
+
+function BackRow({ label, value, valueClass = "text-white" }) {
+  return (
+    <span className="flex items-center justify-between gap-3 border-b border-white/10 py-1.5 text-sm last:border-0">
+      <span className="truncate text-white/60">{label}</span>
+      <span className={`shrink-0 font-semibold ${valueClass}`}>{value}</span>
+    </span>
+  );
+}
+
+function GlanceStat({ icon: Icon, value, label }) {
+  return (
+    <div className="flex items-center gap-3 px-5 first:pl-0 last:pr-0">
+      <Icon size={18} strokeWidth={1.5} className="text-[rgb(var(--brand-text))]" />
+      <div>
+        <p className="text-2xl font-semibold leading-none text-slate-900" style={serif}>
+          {value}
+        </p>
+        <p className="mt-1 text-xs text-slate-500">{label}</p>
+      </div>
+    </div>
+  );
+}
+
+function SectionTitle({ icon: Icon, children, aside }) {
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <h2 className="flex items-center gap-3 text-xl font-semibold text-slate-900" style={serif}>
+        <Icon size={17} strokeWidth={1.6} className="text-[rgb(var(--brand-text))]" />
+        {children}
+      </h2>
+      {aside}
+    </div>
+  );
+}
+
+const Grip = () => <GripVertical size={16} className="shrink-0 text-slate-300" aria-hidden="true" />;
+
+const textLink =
+  "text-sm font-medium text-[rgb(var(--brand-text))] hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-[rgb(var(--brand-line))]";
+
+/* ---------- page ---------- */
+
 export default function FinanceWorkspace() {
   const maxBar = Math.max(...PAYOUT_TREND.map((p) => p.value));
 
   return (
-    <div className="finance-workspace">
-      <style>{styles}</style>
+    <div className="space-y-8">
+      {/* Hero */}
+      <section className="relative overflow-hidden rounded-[var(--radius-card)] bg-gradient-to-br from-[rgb(var(--hero-a))] via-[rgb(var(--hero-b))] to-[rgb(var(--hero-c))] p-7 ring-1 ring-[rgb(var(--brand-line)/0.4)] sm:p-10">
+        <GoldLine className="inset-x-16" />
 
-      <div className="page-header">
-        <h1>Finance</h1>
-        <a className="canvas-link" href="#">✎ Explore with a canvas</a>
-      </div>
-
-      {/* Top summary strip */}
-      <div className="summary-strip">
-        <div className="summary-card">
-          <div className="label">Available balance <InfoIcon /></div>
-          <div className="amount positive">₹42,180.00</div>
-          <div className="sub"><a href="#">View balance details</a></div>
-        </div>
-        <div className="summary-card">
-          <div className="label">Next disbursement <InfoIcon /></div>
-          <div className="amount">₹42,180.00</div>
-          <div className="sub">Scheduled for 20 Jul 2026</div>
-        </div>
-        <div className="summary-card">
-          <div className="label">Reserved balance <InfoIcon /></div>
-          <div className="amount">₹5,640.00</div>
-          <div className="sub"><a href="#">Why is this reserved?</a></div>
-        </div>
-        <div className="summary-card">
-          <div className="label">Unresolved fees <InfoIcon /></div>
-          <div className="amount negative">₹0.00</div>
-          <div className="sub">No fees pending action</div>
-        </div>
-      </div>
-
-      <div className="grid">
-        {/* Payout trend */}
-        <div className="card">
-          <div className="card-header">
-            <p className="card-title">Disbursement trend</p>
-            <DragHandle />
+        <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
+          <div className="max-w-2xl">
+            <p className="inline-flex items-center gap-2 text-sm font-medium text-[rgb(var(--brand-dark))]">
+              <Gem size={14} strokeWidth={1.6} />
+              Finance workspace
+            </p>
+            <h1 className="mt-3 text-4xl font-semibold leading-[1.08] tracking-tight text-slate-900 sm:text-5xl" style={serif}>
+              Finance
+            </h1>
+            <p className="mt-4 max-w-xl text-sm leading-relaxed text-slate-600">
+              Track your balance, upcoming disbursements, fees, and recent transactions in one place.
+            </p>
           </div>
-          <a className="card-link" href="#">View payment history</a>
-          <div className="bar-chart">
+
+          <div className="flex flex-col gap-5 lg:items-end">
+            <div className="flex divide-x divide-[rgb(var(--brand-line)/0.4)]">
+              <GlanceStat icon={Banknote} value="₹42,180" label="available balance" />
+              <GlanceStat icon={Landmark} value="20 Jul" label="next disbursement" />
+              <GlanceStat icon={ReceiptText} value="128" label="transactions" />
+            </div>
+            <a href="#" className={textLink}>
+              ✎ Explore with a canvas
+            </a>
+          </div>
+        </div>
+      </section>
+
+      {/* Summary flip cards */}
+      <section aria-label="Balance summary">
+        <p className="mb-3 flex items-center gap-1.5 text-xs text-slate-500">
+          <RotateCw size={12} />
+          Select a card to flip it for a breakdown.
+        </p>
+        <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+          {SUMMARY.map((item) => (
+            <FlipCard
+              key={item.label}
+              label={item.label}
+              palette={item.palette}
+              front={
+                <>
+                  <span className="flex items-start justify-between">
+                    <span className="flex items-center gap-1.5 text-sm font-medium text-slate-600">
+                      {item.label}
+                      <Info size={13} className="text-slate-400" aria-hidden="true" />
+                    </span>
+                    <IconChip icon={item.icon} palette={item.palette} />
+                  </span>
+                  <span className="mt-auto block text-3xl font-semibold tracking-tight text-slate-900" style={serif}>
+                    {item.value}
+                  </span>
+                  <span className="mt-0.5 block pr-6 text-xs text-slate-600">{item.helper}</span>
+                </>
+              }
+              back={
+                <>
+                  <BackTitle>{item.backTitle}</BackTitle>
+                  {item.backRows.map((row) => (
+                    <BackRow key={row.label} {...row} />
+                  ))}
+                </>
+              }
+            />
+          ))}
+        </div>
+      </section>
+
+      {/* Charts */}
+      <section className="grid gap-6 lg:grid-cols-2" aria-label="Disbursements and fees">
+        {/* Payout trend */}
+        <div className="relative rounded-[var(--radius-card)] bg-white p-6 ring-1 ring-stone-200 sm:p-7">
+          <GoldLine className="inset-x-10" />
+          <SectionTitle icon={TrendingUp} aside={<Grip />}>
+            Disbursement trend
+          </SectionTitle>
+          <a className={`mt-1 inline-block ${textLink}`} href="#">
+            View payment history
+          </a>
+
+          <div className="mt-5 flex h-40 items-end gap-3 px-1" role="img" aria-label="Disbursement amounts for the last six months">
             {PAYOUT_TREND.map((p) => (
-              <div className="bar-col" key={p.label}>
+              <div key={p.label} className="flex h-full flex-1 flex-col items-center justify-end gap-1.5">
                 <div
-                  className={`bar ${p.muted ? "muted" : ""}`}
+                  className={`w-full max-w-[34px] rounded-t-[var(--radius-control)] ${
+                    p.muted ? "bg-[rgb(var(--tint-300))]" : "bg-[rgb(var(--brand))]"
+                  }`}
                   style={{ height: `${(p.value / maxBar) * 100}%` }}
                 />
-                <div className="bar-label">{p.label}</div>
+                <span className={`text-xs ${p.muted ? "text-slate-500" : "font-semibold text-slate-900"}`}>{p.label}</span>
               </div>
             ))}
           </div>
         </div>
 
         {/* Fee breakdown */}
-        <div className="card">
-          <div className="card-header">
-            <p className="card-title">Fee breakdown (last 30 days)</p>
-            <DragHandle />
-          </div>
-          <a className="card-link" href="#">Manage taxes &amp; fees</a>
-          <div className="breakdown-list">
-            {FEE_BREAKDOWN.map((f) => (
-              <div className="breakdown-row" key={f.name}>
-                <span className="dot" style={{ background: f.color }} />
-                <span className="name">{f.name}</span>
-                <span className="value">{f.value}</span>
-              </div>
-            ))}
-          </div>
-          <div className="breakdown-bar-track">
-            {FEE_BREAKDOWN.map((f) => (
-              <div
-                key={f.name}
-                className="breakdown-bar-seg"
-                style={{ width: `${f.pct}%`, background: f.color }}
-              />
-            ))}
+        <div className="relative rounded-[var(--radius-card)] bg-white p-6 ring-1 ring-stone-200 sm:p-7">
+          <GoldLine className="inset-x-10" />
+          <SectionTitle icon={PieChart} aside={<Grip />}>
+            Fee breakdown (last 30 days)
+          </SectionTitle>
+          <a className={`mt-1 inline-block ${textLink}`} href="#">
+            Manage taxes &amp; fees
+          </a>
+
+          <div className="mt-5">
+            <div className="flex h-3 overflow-hidden rounded-full bg-stone-100" role="img" aria-label="Fee share by category">
+              {FEE_BREAKDOWN.map((f, index) => (
+                <span
+                  key={f.name}
+                  className="h-full border-r border-white last:border-0"
+                  style={{ width: `${f.pct}%`, backgroundColor: solids[index % solids.length] }}
+                />
+              ))}
+            </div>
+
+            <ul className="mt-5 space-y-3">
+              {FEE_BREAKDOWN.map((f, index) => (
+                <li key={f.name} className="flex items-center justify-between gap-3 text-sm">
+                  <span className="flex min-w-0 items-center gap-2.5">
+                    <span
+                      className="h-2.5 w-2.5 shrink-0 rounded-full"
+                      style={{ backgroundColor: solids[index % solids.length] }}
+                    />
+                    <span className="truncate text-slate-700">{f.name}</span>
+                  </span>
+                  <span className="flex shrink-0 items-baseline gap-3">
+                    <span className="font-semibold text-slate-900">{f.value}</span>
+                    <span className="w-10 text-right text-xs text-slate-500">{f.pct}%</span>
+                  </span>
+                </li>
+              ))}
+            </ul>
           </div>
         </div>
-      </div>
+      </section>
 
       {/* Recent transactions */}
-      <div className="table-card">
-        <div className="card-header">
-          <p className="card-title">Recent transactions</p>
-          <DragHandle />
+      <section className="relative overflow-hidden rounded-[var(--radius-card)] bg-white ring-1 ring-stone-200">
+        <GoldLine className="inset-x-10" />
+        <div className="border-b border-stone-200 px-6 py-5">
+          <SectionTitle icon={ReceiptText} aside={<Grip />}>
+            Recent transactions
+          </SectionTitle>
         </div>
-        <table>
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Description</th>
-              <th>Type</th>
-              <th>Amount</th>
-            </tr>
-          </thead>
-          <tbody>
-            {TRANSACTIONS.map((t, i) => (
-              <tr key={i}>
-                <td>{t.date}</td>
-                <td>{t.desc}</td>
-                <td>
-                  <span className={`txn-type ${t.type}`}>{t.label}</span>
-                </td>
-                <td
-                  className={`amount-cell ${
-                    t.amount.startsWith("+") ? "positive" : t.amount.startsWith("−") ? "negative" : ""
-                  }`}
-                >
-                  {t.amount}
-                </td>
+
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[640px] text-left text-sm">
+            <thead className="border-b border-stone-200 bg-[rgb(var(--tint-50))] text-slate-600">
+              <tr>
+                <th className="px-6 py-3 font-semibold">Date</th>
+                <th className="px-6 py-3 font-semibold">Description</th>
+                <th className="px-6 py-3 font-semibold">Type</th>
+                <th className="px-6 py-3 text-right font-semibold">Amount</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-        <div className="table-footer">
-          <span>Showing 5 of 128 transactions</span>
-          <a href="#" style={{ color: "var(--amz-blue)", textDecoration: "none" }}>
+            </thead>
+            <tbody className="divide-y divide-stone-100">
+              {TRANSACTIONS.map((t, i) => (
+                <tr key={i} className="transition-colors hover:bg-stone-50">
+                  <td className="whitespace-nowrap px-6 py-4 text-slate-600">{t.date}</td>
+                  <td className="px-6 py-4 text-slate-900">{t.desc}</td>
+                  <td className="px-6 py-4">
+                    <span
+                      className={`inline-block rounded-[var(--radius-control)] px-2.5 py-1 text-xs font-medium ring-1 ${txnPill[t.type]}`}
+                    >
+                      {t.label}
+                    </span>
+                  </td>
+                  <td
+                    className={`whitespace-nowrap px-6 py-4 text-right text-lg font-semibold ${
+                      t.amount.startsWith("+")
+                        ? "text-emerald-700"
+                        : t.amount.startsWith("−")
+                        ? "text-rose-700"
+                        : "text-slate-900"
+                    }`}
+                    style={serif}
+                  >
+                    {t.amount}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-stone-200 px-6 py-3">
+          <span className="text-xs text-slate-500">Showing 5 of 128 transactions</span>
+          <a href="#" className={textLink}>
             View all transactions →
           </a>
         </div>
-      </div>
+      </section>
     </div>
   );
 }

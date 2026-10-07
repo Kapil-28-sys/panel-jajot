@@ -11,11 +11,16 @@ import {
   XCircle,
   RefreshCw,
   ImageOff,
+  Boxes,
+  Layers,
 } from "lucide-react";
 import { getCurrentSession } from "../../config/localAuth";
 
 const API_BASE = "https://amazon-multi-vendor-3.onrender.com/api";
 const PAGE_SIZE = 10;
+
+/* Same design tokens as Dashboard (CSS variables from your theme). */
+const serif = { fontFamily: "var(--font-display)" };
 
 /* ---------------- helpers ---------------- */
 
@@ -53,18 +58,7 @@ const attrSummary = (attributes = []) =>
     .map((a) => `${a.name.trim()}: ${a.value}`)
     .join(" \u00b7 ");
 
-const idStr = (v) => {
-  if (v == null) return "";
-  if (typeof v === "object") return String(v._id ?? v.id ?? "").trim();
-  return String(v).trim();
-};
-
-// ── endpoint #16 — GET /products/filters/:inventory ──
-// "inventory" here is a stock-level bucket: low | medium | high.
-// Response shape isn't confirmed from the backend yet — this reads
-// data.data first, then falls back to a bare array, same defensive
-// pattern used everywhere else in this file. Adjust once you see the
-// real payload.
+// ── endpoint #16 — GET /products/filters/:inventory  (low | medium | high)
 async function fetchFilteredByInventory(level, token) {
   const res = await fetch(`${API_BASE}/products/filters/${level}`, {
     headers: token ? { Authorization: `Bearer ${token}` } : {},
@@ -76,11 +70,7 @@ async function fetchFilteredByInventory(level, token) {
   return Array.isArray(data.data) ? data.data : Array.isArray(data) ? data : [];
 }
 
-// ── endpoint #17 — GET /products/inventory/vendor/:vendorId ──
-// Pulls the vendor's real, live stock numbers straight from the
-// inventory collection. Used as a manual "sync" so numbers on this
-// table don't drift from what /products/inventory (populated, but
-// possibly stale) is showing.
+// ── endpoint #17 — GET /products/inventory/vendor/:vendorId  (manual sync)
 async function fetchInventoryByVendor(vId, token) {
   const res = await fetch(`${API_BASE}/products/inventory/vendor/${vId}`, {
     headers: token ? { Authorization: `Bearer ${token}` } : {},
@@ -106,18 +96,7 @@ function mergeVendorInventoryRows(items, rows) {
   });
 }
 
-// ── endpoint #18 — PUT /products/inventory/:vendorId/:productId/:variantId ──
-// Direct, single-call update of one variant's stock, offer, maxQty and
-// isActive — scoped by vendor. This is the ONLY update call handleSave
-// makes now. The old approach of GET-whole-product → patch variants[]
-// client-side → PUT-whole-product (and later, a doomed second call to
-// the non-existent `PUT /products/inventory/:id`) is gone — that route
-// was never registered on the backend and always 404'd.
-//
-// ids are sent both in the URL (which the route uses to locate the
-// record) and in the body (in case the controller reads them from
-// req.body too) — confirmed working against this exact payload shape
-// in Postman.
+// ── endpoint #18 — PUT /products/inventory/:vendorId/:productId/:variantId
 async function putVariantInventory(vId, productId, variantId, payload, token) {
   const res = await fetch(`${API_BASE}/products/inventory/${vId}/${productId}/${variantId}`, {
     method: "PUT",
@@ -138,6 +117,66 @@ async function putVariantInventory(vId, productId, variantId, payload, token) {
   }
   return data;
 }
+
+/* ---------------- building blocks ---------------- */
+
+function GoldLine({ className = "inset-x-10" }) {
+  return (
+    <span
+      className={`pointer-events-none absolute top-0 h-px bg-gradient-to-r from-transparent via-[rgb(var(--brand-line))] to-transparent ${className}`}
+    />
+  );
+}
+
+function Panel({ children, className = "" }) {
+  return (
+    <div className={`relative rounded-[var(--radius-card)] bg-white ring-1 ring-stone-200 ${className}`}>
+      <GoldLine />
+      {children}
+    </div>
+  );
+}
+
+function SummaryStat({ icon: Icon, value, label, tone = "text-slate-900" }) {
+  return (
+    <div className="flex items-center gap-3 px-5 first:pl-0 last:pr-0">
+      <Icon size={18} strokeWidth={1.5} className="text-[rgb(var(--brand-text))]" />
+      <div>
+        <p className={`text-2xl font-semibold leading-none tabular-nums ${tone}`} style={serif}>
+          {value}
+        </p>
+        <p className="mt-1 text-xs text-slate-500">{label}</p>
+      </div>
+    </div>
+  );
+}
+
+function StockBadge({ status }) {
+  return status === "in_stock" ? (
+    <span className="inline-flex items-center gap-1 rounded-[var(--radius-control)] bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-800 ring-1 ring-inset ring-emerald-200">
+      <CheckCircle2 className="h-3 w-3" /> In stock
+    </span>
+  ) : (
+    <span className="inline-flex items-center gap-1 rounded-[var(--radius-control)] bg-rose-50 px-2 py-0.5 text-xs font-medium text-rose-800 ring-1 ring-inset ring-rose-200">
+      <XCircle className="h-3 w-3" /> Out of stock
+    </span>
+  );
+}
+
+function Field({ label, children }) {
+  return (
+    <div>
+      <label className="mb-1 block text-xs font-medium text-slate-600">{label}</label>
+      {children}
+    </div>
+  );
+}
+
+const inputCls =
+  "w-full rounded-[var(--radius-control)] border border-stone-300 bg-white px-2.5 py-2 text-sm tabular-nums text-slate-900 outline-none transition-colors focus:border-[rgb(var(--brand))] focus:ring-1 focus:ring-[rgb(var(--brand))]";
+
+const ghostBtn =
+  "inline-flex items-center gap-2 rounded-[var(--radius-control)] border border-stone-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-800 shadow-sm transition-colors hover:bg-stone-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[rgb(var(--brand-line))] disabled:opacity-50";
 
 /* ---------------- component ---------------- */
 
@@ -249,9 +288,6 @@ export default function Inventory() {
       _id: item._id,
       productId: item.productId?._id ?? item.productId ?? null,
       variantId: item.variantId?._id ?? item.variantId ?? null,
-      // vendor scope needed for endpoint #18 — Super Admin rows carry
-      // their own vendorId; Vendor-session rows fall back to the
-      // logged-in vendor's own id.
       vendorIdForItem: item.vendorId?._id ?? item.vendorId ?? vendorId ?? null,
       productName: item.productId?.productName || "Unnamed product",
       sku: item.variantId?.sku || "\u2014",
@@ -282,9 +318,6 @@ export default function Inventory() {
         throw new Error("Missing vendor, product, or variant id for this row.");
       }
 
-      // Single source of truth for the update — endpoint #18 above.
-      // The old bare `PUT /products/inventory/:id` call is gone; that
-      // route never existed on the backend and always 404'd.
       await putVariantInventory(
         editingItem.vendorIdForItem,
         editingItem.productId,
@@ -311,94 +344,110 @@ export default function Inventory() {
     }
   };
 
-  const StockBadge = ({ status }) =>
-    status === "in_stock" ? (
-      <span className="inline-flex items-center gap-1 rounded-full bg-green-50 px-2.5 py-0.5 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-200">
-        <CheckCircle2 className="h-3 w-3" /> In stock
-      </span>
-    ) : (
-      <span className="inline-flex items-center gap-1 rounded-full bg-red-50 px-2.5 py-0.5 text-xs font-medium text-red-700 ring-1 ring-inset ring-red-200">
-        <XCircle className="h-3 w-3" /> Out of stock
-      </span>
-    );
-
   const tabs = [
-    { key: "all", label: "All Inventory", count: counts.all },
-    { key: "in_stock", label: "In Stock", count: counts.in_stock },
-    { key: "out_of_stock", label: "Out of Stock", count: counts.out_of_stock },
+    { key: "all", label: "All inventory", count: counts.all },
+    { key: "in_stock", label: "In stock", count: counts.in_stock },
+    { key: "out_of_stock", label: "Out of stock", count: counts.out_of_stock },
   ];
 
   const levelTabs = ["low", "medium", "high"]; // endpoint #16 buckets
+  const colCount = isSuperAdmin ? 8 : 7;
 
   return (
-    <div className="min-h-screen bg-[rgb(var(--page-bg))] p-4 md:p-6">
-      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-xl font-semibold text-ink-950">Manage Inventory</h1>
-          <p className="mt-0.5 text-sm text-slate-500">
-            {isSuperAdmin
-              ? "View and update pricing & stock across all vendors."
-              : "View and update pricing & stock for your listings."}
-          </p>
+    <div className="min-h-screen space-y-6 bg-[rgb(var(--page-bg))] p-4 md:p-6">
+      {/* Hero — same look as Dashboard */}
+      <section className="relative overflow-hidden rounded-[var(--radius-card)] bg-gradient-to-br from-[rgb(var(--hero-a))] via-[rgb(var(--hero-b))] to-[rgb(var(--hero-c))] p-6 ring-1 ring-[rgb(var(--brand-line)/0.4)] sm:p-8">
+        <GoldLine className="inset-x-16" />
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+          <div className="max-w-2xl">
+            <p className="inline-flex items-center gap-2 text-sm font-medium text-[rgb(var(--brand-dark))]">
+              <Boxes size={14} strokeWidth={1.6} />
+              Inventory control
+            </p>
+            <h1 className="mt-2 text-3xl font-semibold leading-tight tracking-tight text-slate-900 sm:text-4xl" style={serif}>
+              Manage inventory
+            </h1>
+            <p className="mt-2 max-w-xl text-sm leading-relaxed text-slate-600">
+              {isSuperAdmin
+                ? "View and update pricing & stock across all vendors."
+                : "View and update pricing & stock for your listings."}
+            </p>
+          </div>
+          <div className="flex flex-col gap-4 sm:items-end">
+            <div className="flex divide-x divide-[rgb(var(--brand-line)/0.4)]">
+              <SummaryStat icon={Layers} value={loading ? "\u2014" : counts.all} label="listings" />
+              <SummaryStat icon={CheckCircle2} value={loading ? "\u2014" : counts.in_stock} label="in stock" />
+              <SummaryStat
+                icon={Package}
+                value={loading ? "\u2014" : counts.out_of_stock}
+                label="out of stock"
+                tone={counts.out_of_stock > 0 ? "text-rose-700" : "text-slate-900"}
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              {!isSuperAdmin && (
+                <button
+                  onClick={syncFromVendorInventory}
+                  disabled={syncing}
+                  title="Pull latest stock from /products/inventory/vendor/:vendorId"
+                  className={ghostBtn}
+                >
+                  <RefreshCw className={`h-4 w-4 ${syncing ? "animate-spin" : ""}`} />
+                  Sync inventory
+                </button>
+              )}
+              <button onClick={fetchInventory} className={ghostBtn}>
+                <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+                Refresh
+              </button>
+            </div>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          {!isSuperAdmin && (
-            <button
-              onClick={syncFromVendorInventory}
-              disabled={syncing}
-              title="Pull latest stock from /products/inventory/vendor/:vendorId"
-              className="inline-flex items-center gap-2 rounded-control border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-ink-800 shadow-sm hover:bg-slate-50 disabled:opacity-50"
-            >
-              <RefreshCw className={`h-4 w-4 ${syncing ? "animate-spin" : ""}`} />
-              Sync inventory
-            </button>
-          )}
-          <button
-            onClick={fetchInventory}
-            className="inline-flex items-center gap-2 rounded-control border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-ink-800 shadow-sm hover:bg-slate-50"
-          >
-            <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-            Refresh
-          </button>
-        </div>
-      </div>
+      </section>
 
-      <div className="rounded-card border border-slate-200 bg-white shadow-sm">
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 px-3 pt-2">
+      <Panel className="overflow-hidden">
+        {/* Tabs + stock level */}
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-stone-200 px-4 pt-2">
           <div className="flex flex-wrap items-center gap-1">
-            {tabs.map((tab) => (
-              <button
-                key={tab.key}
-                onClick={() => { setLevelFilter(""); setStatusTab(tab.key); }}
-                className={`rounded-t-md px-3 py-2 text-sm font-medium transition-colors ${
-                  !levelFilter && statusTab === tab.key
-                    ? "border-b-2 border-amber-600 text-ink-950"
-                    : "border-b-2 border-transparent text-slate-500 hover:text-ink-900"
-                }`}
-              >
-                {tab.label}
-                <span
-                  className={`ml-1.5 rounded-full px-1.5 py-0.5 text-xs ${
-                    !levelFilter && statusTab === tab.key ? "bg-amber-50 text-amber-600" : "bg-slate-100 text-slate-500"
+            {tabs.map((tab) => {
+              const active = !levelFilter && statusTab === tab.key;
+              return (
+                <button
+                  key={tab.key}
+                  onClick={() => {
+                    setLevelFilter("");
+                    setStatusTab(tab.key);
+                  }}
+                  className={`border-b-2 px-3 py-2.5 text-sm font-medium transition-colors ${
+                    active
+                      ? "border-[rgb(var(--brand))] text-slate-900"
+                      : "border-transparent text-slate-500 hover:text-slate-800"
                   }`}
                 >
-                  {tab.count}
-                </span>
-              </button>
-            ))}
+                  {tab.label}
+                  <span
+                    className={`ml-1.5 rounded-[var(--radius-control)] px-1.5 py-0.5 text-xs tabular-nums ${
+                      active ? "bg-[rgb(var(--tint-100))] text-[rgb(var(--brand-text))]" : "bg-stone-100 text-slate-500"
+                    }`}
+                  >
+                    {tab.count}
+                  </span>
+                </button>
+              );
+            })}
           </div>
 
-          {/* endpoint #16 — stock-level buckets */}
-          <div className="flex items-center gap-1 pb-2">
-            <span className="text-xs font-bold uppercase tracking-wide text-slate-400 mr-1">Level</span>
+          <div className="flex items-center gap-1.5 pb-2">
+            <span className="mr-1 text-xs font-medium text-slate-500">Stock level</span>
             {levelTabs.map((lvl) => (
               <button
                 key={lvl}
                 onClick={() => setLevelFilter(levelFilter === lvl ? "" : lvl)}
-                className={`rounded-full border px-2.5 py-1 text-xs font-semibold capitalize transition-colors ${
+                aria-pressed={levelFilter === lvl}
+                className={`rounded-[var(--radius-control)] border px-2.5 py-1 text-xs font-semibold capitalize transition-colors ${
                   levelFilter === lvl
-                    ? "border-amber-600 bg-amber-600 text-white"
-                    : "border-slate-200 bg-white text-ink-700 hover:border-amber-600 hover:text-amber-700"
+                    ? "border-transparent bg-gradient-to-br from-[rgb(var(--brand))] to-[rgb(var(--brand-dark))] text-white"
+                    : "border-stone-200 bg-white text-slate-700 hover:border-[rgb(var(--brand-line))] hover:text-[rgb(var(--brand-text))]"
                 }`}
               >
                 {lvl}
@@ -407,23 +456,24 @@ export default function Inventory() {
           </div>
         </div>
 
-        <div className="flex flex-col gap-3 border-b border-slate-200 p-3 sm:flex-row sm:items-center sm:justify-between">
+        {/* Search */}
+        <div className="flex flex-col gap-3 border-b border-stone-200 p-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="relative w-full sm:max-w-sm">
-            <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search by product, SKU, brand or vendor"
-              className="w-full rounded-control border border-slate-300 bg-white py-1.5 pl-9 pr-3 text-sm outline-none focus:border-amber-600 focus:ring-1 focus:ring-amber-600"
+              className="w-full rounded-[var(--radius-control)] border border-stone-300 bg-white py-2 pl-9 pr-3 text-sm outline-none transition-colors focus:border-[rgb(var(--brand))] focus:ring-1 focus:ring-[rgb(var(--brand))]"
             />
           </div>
           <div className="text-sm text-slate-500">
-            Showing <span className="font-medium text-ink-800">{filtered.length}</span> results
+            Showing <span className="font-semibold tabular-nums text-slate-900">{filtered.length}</span> results
           </div>
         </div>
 
         {error && (
-          <div className="m-3 flex items-start gap-2 rounded-control border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+          <div className="m-4 flex items-start gap-2 rounded-[var(--radius-control)] border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">
             <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0" />
             <div>
               <p className="font-medium">Couldn't load inventory</p>
@@ -433,32 +483,30 @@ export default function Inventory() {
         )}
 
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-slate-200 text-sm">
-            <thead className="bg-slate-50">
+          <table className="min-w-full divide-y divide-stone-200 text-sm">
+            <thead className="bg-stone-50">
               <tr>
-                <th className="px-4 py-3 text-left font-semibold text-ink-700">Product</th>
-                {isSuperAdmin && (
-                  <th className="px-4 py-3 text-left font-semibold text-ink-700">Vendor</th>
-                )}
-                <th className="px-4 py-3 text-right font-semibold text-ink-700">MRP</th>
-                <th className="px-4 py-3 text-right font-semibold text-ink-700">Selling Price</th>
-                <th className="px-4 py-3 text-right font-semibold text-ink-700">Sale Price</th>
-                <th className="px-4 py-3 text-center font-semibold text-ink-700">Stock</th>
-                <th className="px-4 py-3 text-center font-semibold text-ink-700">Status</th>
-                <th className="px-4 py-3 text-center font-semibold text-ink-700">Actions</th>
+                <th className="px-4 py-3 text-left font-semibold text-slate-600">Product</th>
+                {isSuperAdmin && <th className="px-4 py-3 text-left font-semibold text-slate-600">Vendor</th>}
+                <th className="px-4 py-3 text-right font-semibold text-slate-600">MRP</th>
+                <th className="px-4 py-3 text-right font-semibold text-slate-600">Selling price</th>
+                <th className="px-4 py-3 text-right font-semibold text-slate-600">Sale price</th>
+                <th className="px-4 py-3 text-center font-semibold text-slate-600">Stock</th>
+                <th className="px-4 py-3 text-center font-semibold text-slate-600">Status</th>
+                <th className="px-4 py-3 text-center font-semibold text-slate-600">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-stone-100">
               {loading ? (
                 <tr>
-                  <td colSpan={isSuperAdmin ? 8 : 7} className="px-4 py-10 text-center text-slate-400">
-                    Loading inventory\u2026
+                  <td colSpan={colCount} className="px-4 py-12 text-center text-slate-400">
+                    {"Loading inventory\u2026"}
                   </td>
                 </tr>
               ) : pageItems.length === 0 ? (
                 <tr>
-                  <td colSpan={isSuperAdmin ? 8 : 7} className="px-4 py-10 text-center text-slate-400">
-                    <Package className="mx-auto mb-2 h-8 w-8 text-slate-300" />
+                  <td colSpan={colCount} className="px-4 py-12 text-center text-slate-500">
+                    <Package className="mx-auto mb-2 h-8 w-8 text-stone-300" />
                     No inventory items match your filters.
                   </td>
                 </tr>
@@ -468,30 +516,30 @@ export default function Inventory() {
                   const offer = item.variantId?.offer || {};
                   const attrs = attrSummary(item.variantId?.attributes);
                   return (
-                    <tr key={item._id} className="hover:bg-slate-50">
+                    <tr key={item._id} className="transition-colors hover:bg-stone-50">
                       <td className="px-4 py-3">
                         <div className="flex items-start gap-3">
-                          <div className="h-12 w-12 flex-shrink-0 overflow-hidden rounded-control border border-slate-200 bg-slate-50">
+                          <div className="h-12 w-12 flex-shrink-0 overflow-hidden rounded-[var(--radius-control)] border border-stone-200 bg-stone-50">
                             {image ? (
                               <img
                                 src={image}
                                 alt={item.productId?.productName || "Product"}
                                 className="h-full w-full object-cover"
-                                onError={(e) => { e.currentTarget.style.display = "none"; }}
+                                onError={(e) => {
+                                  e.currentTarget.style.display = "none";
+                                }}
                               />
                             ) : (
                               <div className="flex h-full w-full items-center justify-center">
-                                <ImageOff className="h-4 w-4 text-slate-300" />
+                                <ImageOff className="h-4 w-4 text-stone-300" />
                               </div>
                             )}
                           </div>
                           <div className="min-w-0">
-                            <p className="truncate font-medium text-amber-600">
+                            <p className="truncate font-semibold text-slate-900">
                               {item.productId?.productName || "Unnamed product"}
                             </p>
-                            <p className="mt-0.5 text-xs text-slate-500">
-                              SKU: {item.variantId?.sku || "\u2014"}
-                            </p>
+                            <p className="mt-0.5 text-xs text-slate-500">SKU: {item.variantId?.sku || "\u2014"}</p>
                             {attrs && (
                               <p className="mt-0.5 truncate text-xs text-slate-400" title={attrs}>
                                 {attrs}
@@ -502,10 +550,10 @@ export default function Inventory() {
                       </td>
 
                       {isSuperAdmin && (
-                        <td className="px-4 py-3 text-ink-700">
+                        <td className="px-4 py-3">
                           {item.vendorId?.name ? (
                             <div>
-                              <p className="font-medium text-ink-800">{item.vendorId.name}</p>
+                              <p className="font-medium text-slate-900">{item.vendorId.name}</p>
                               <p className="text-xs text-slate-400">{item.vendorId.companyname}</p>
                             </div>
                           ) : (
@@ -514,26 +562,24 @@ export default function Inventory() {
                         </td>
                       )}
 
-                      <td className="px-4 py-3 text-right text-slate-400 line-through">
+                      <td className="px-4 py-3 text-right tabular-nums text-slate-400 line-through">
                         {formatMoney(offer.mrp)}
                       </td>
-                      <td className="px-4 py-3 text-right font-medium text-ink-900">
+                      <td className="px-4 py-3 text-right font-medium tabular-nums text-slate-900">
                         {formatMoney(offer.sellingPrice)}
                       </td>
-                      <td className="px-4 py-3 text-right font-semibold text-red-600">
+                      <td className="px-4 py-3 text-right font-semibold tabular-nums text-[rgb(var(--brand-text))]">
                         {formatMoney(offer.salePrice)}
                       </td>
                       <td className="px-4 py-3 text-center">
-                        <span className="font-medium text-ink-900">{item.stock ?? 0}</span>
-                        <span className="text-xs text-slate-400"> / max {item.maxQty ?? 0}</span>
+                        <span className="font-semibold tabular-nums text-slate-900">{item.stock ?? 0}</span>
+                        <span className="text-xs text-slate-400">{" / max "}{item.maxQty ?? 0}</span>
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex flex-col items-center gap-1">
                           <StockBadge status={item.stockStatus} />
                           <span
-                            className={`text-xs font-medium ${
-                              item.isActive ? "text-green-600" : "text-slate-400"
-                            }`}
+                            className={`text-xs font-medium ${item.isActive ? "text-emerald-700" : "text-slate-400"}`}
                           >
                             {item.isActive ? "Active" : "Inactive"}
                           </span>
@@ -542,7 +588,7 @@ export default function Inventory() {
                       <td className="px-4 py-3 text-center">
                         <button
                           onClick={() => openEdit(item)}
-                          className="inline-flex items-center gap-1 rounded-control border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-medium text-ink-800 hover:bg-slate-50"
+                          className="inline-flex items-center gap-1 rounded-[var(--radius-control)] border border-stone-300 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-800 transition-colors hover:border-[rgb(var(--brand-line))] hover:text-[rgb(var(--brand-text))] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[rgb(var(--brand-line))]"
                         >
                           <Pencil className="h-3.5 w-3.5" />
                           Edit
@@ -557,132 +603,107 @@ export default function Inventory() {
         </div>
 
         {!loading && filtered.length > 0 && (
-          <div className="flex items-center justify-between border-t border-slate-200 px-4 py-3">
-            <p className="text-xs text-slate-500">
+          <div className="flex items-center justify-between border-t border-stone-200 px-4 py-3">
+            <p className="text-xs tabular-nums text-slate-500">
               Page {page} of {totalPages}
             </p>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={page === 1}
-                className="inline-flex items-center gap-1 rounded-control border border-slate-300 px-2.5 py-1.5 text-xs font-medium text-ink-800 disabled:cursor-not-allowed disabled:opacity-40"
+                className="inline-flex items-center gap-1 rounded-[var(--radius-control)] border border-stone-300 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-800 transition-colors hover:bg-stone-50 disabled:cursor-not-allowed disabled:opacity-40"
               >
                 <ChevronLeft className="h-3.5 w-3.5" /> Prev
               </button>
               <button
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                 disabled={page === totalPages}
-                className="inline-flex items-center gap-1 rounded-control border border-slate-300 px-2.5 py-1.5 text-xs font-medium text-ink-800 disabled:cursor-not-allowed disabled:opacity-40"
+                className="inline-flex items-center gap-1 rounded-[var(--radius-control)] border border-stone-300 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-800 transition-colors hover:bg-stone-50 disabled:cursor-not-allowed disabled:opacity-40"
               >
                 Next <ChevronRight className="h-3.5 w-3.5" />
               </button>
             </div>
           </div>
         )}
-      </div>
+      </Panel>
 
+      {/* Edit modal */}
       {editingItem && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-md rounded-card bg-white shadow-pop">
-            <div className="flex items-center justify-between border-b border-slate-200 px-5 py-3">
-              <div>
-                <h2 className="text-base font-semibold text-ink-950">Manage Pricing & Inventory</h2>
-                <p className="text-xs text-slate-500">
-                  {editingItem.productName} \u00b7 SKU: {editingItem.sku}
+          <div
+            role="dialog"
+            aria-modal="true"
+            className="relative w-full max-w-md overflow-hidden rounded-[var(--radius-card)] bg-white shadow-2xl ring-1 ring-[rgb(var(--brand-line)/0.4)]"
+          >
+            <GoldLine className="inset-x-8" />
+            <div className="flex items-start justify-between gap-3 border-b border-stone-200 bg-gradient-to-br from-[rgb(var(--hero-a))] via-[rgb(var(--hero-b))] to-[rgb(var(--hero-c))] px-5 py-4">
+              <div className="min-w-0">
+                <h2 className="text-lg font-semibold text-slate-900" style={serif}>
+                  Manage pricing & inventory
+                </h2>
+                <p className="mt-0.5 truncate text-xs text-slate-600">
+                  {editingItem.productName}
+                  {" \u00b7 SKU: "}
+                  {editingItem.sku}
                 </p>
               </div>
-              <button onClick={closeEdit} className="rounded-control p-1 text-slate-400 hover:bg-slate-100 hover:text-ink-700">
+              <button
+                onClick={closeEdit}
+                aria-label="Close"
+                className="rounded-[var(--radius-control)] p-1 text-slate-500 transition-colors hover:bg-white/60 hover:text-slate-900"
+              >
                 <X className="h-4 w-4" />
               </button>
             </div>
 
-            <div className="space-y-4 px-5 py-4">
+            <div className="space-y-4 px-5 py-5">
               <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-ink-700">MRP (\u20b9)</label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={editingItem.mrp}
-                    onChange={(e) => updateField("mrp", e.target.value)}
-                    className="w-full rounded-control border border-slate-300 px-2 py-1.5 text-sm outline-none focus:border-amber-600 focus:ring-1 focus:ring-amber-600"
-                  />
-                </div>
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-ink-700">Selling Price</label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={editingItem.sellingPrice}
-                    onChange={(e) => updateField("sellingPrice", e.target.value)}
-                    className="w-full rounded-control border border-slate-300 px-2 py-1.5 text-sm outline-none focus:border-amber-600 focus:ring-1 focus:ring-amber-600"
-                  />
-                </div>
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-ink-700">Sale Price</label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={editingItem.salePrice}
-                    onChange={(e) => updateField("salePrice", e.target.value)}
-                    className="w-full rounded-control border border-slate-300 px-2 py-1.5 text-sm outline-none focus:border-amber-600 focus:ring-1 focus:ring-amber-600"
-                  />
-                </div>
+                <Field label={"MRP (\u20b9)"}>
+                  <input type="number" min="0" value={editingItem.mrp} onChange={(e) => updateField("mrp", e.target.value)} className={inputCls} />
+                </Field>
+                <Field label="Selling price">
+                  <input type="number" min="0" value={editingItem.sellingPrice} onChange={(e) => updateField("sellingPrice", e.target.value)} className={inputCls} />
+                </Field>
+                <Field label="Sale price">
+                  <input type="number" min="0" value={editingItem.salePrice} onChange={(e) => updateField("salePrice", e.target.value)} className={inputCls} />
+                </Field>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-ink-700">Stock (available qty)</label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={editingItem.stock}
-                    onChange={(e) => updateField("stock", e.target.value)}
-                    className="w-full rounded-control border border-slate-300 px-2 py-1.5 text-sm outline-none focus:border-amber-600 focus:ring-1 focus:ring-amber-600"
-                  />
-                </div>
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-ink-700">Max Qty per order</label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={editingItem.maxQty}
-                    onChange={(e) => updateField("maxQty", e.target.value)}
-                    className="w-full rounded-control border border-slate-300 px-2 py-1.5 text-sm outline-none focus:border-amber-600 focus:ring-1 focus:ring-amber-600"
-                  />
-                </div>
+                <Field label="Stock (available qty)">
+                  <input type="number" min="0" value={editingItem.stock} onChange={(e) => updateField("stock", e.target.value)} className={inputCls} />
+                </Field>
+                <Field label="Max qty per order">
+                  <input type="number" min="0" value={editingItem.maxQty} onChange={(e) => updateField("maxQty", e.target.value)} className={inputCls} />
+                </Field>
               </div>
 
-              <label className="flex items-center gap-2 text-sm text-ink-800">
+              <label className="flex items-center gap-2 text-sm text-slate-800">
                 <input
                   type="checkbox"
                   checked={editingItem.isActive}
                   onChange={(e) => updateField("isActive", e.target.checked)}
-                  className="h-4 w-4 rounded-control border-slate-300 text-amber-600 focus:ring-amber-600"
+                  className="h-4 w-4 rounded border-stone-300 accent-[rgb(var(--brand))]"
                 />
                 Listing is active
               </label>
 
               {saveError && (
-                <div className="flex items-start gap-2 rounded-control border border-red-200 bg-red-50 p-2.5 text-xs text-red-700">
+                <div className="flex items-start gap-2 rounded-[var(--radius-control)] border border-rose-200 bg-rose-50 p-2.5 text-xs text-rose-800">
                   <AlertTriangle className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" />
                   {saveError}
                 </div>
               )}
             </div>
 
-            <div className="flex items-center justify-end gap-2 border-t border-slate-200 px-5 py-3">
-              <button
-                onClick={closeEdit}
-                disabled={saving}
-                className="rounded-control border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-ink-800 hover:bg-slate-50 disabled:opacity-50"
-              >
+            <div className="flex items-center justify-end gap-2 border-t border-stone-200 bg-stone-50 px-5 py-3">
+              <button onClick={closeEdit} disabled={saving} className={ghostBtn}>
                 Cancel
               </button>
               <button
                 onClick={handleSave}
                 disabled={saving}
-                className="rounded-control bg-amber-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-amber-700 disabled:opacity-50"
+                className="rounded-[var(--radius-control)] bg-gradient-to-br from-[rgb(var(--brand))] to-[rgb(var(--brand-dark))] px-4 py-1.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[rgb(var(--brand-line))] disabled:opacity-50"
               >
                 {saving ? "Saving\u2026" : "Save changes"}
               </button>

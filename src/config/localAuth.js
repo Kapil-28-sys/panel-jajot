@@ -58,10 +58,7 @@ export const LOCAL_USERS = [
       "/vendor/managetaxes",
       "/vendor/Profitanalysis",
       "/vendor/Financereport",
-<<<<<<< HEAD
-=======
       "/vendor/settings",
->>>>>>> b77933a (scss used in this)
 
       "/admin/categories",
       "/admin/subcategory",
@@ -105,8 +102,6 @@ export const getCurrentSession = () => {
   }
 };
 
-<<<<<<< HEAD
-=======
 // The server-side stylesheet (/api/theme-css) reads this cookie to paint a vendor's own theme on first load.
 const setVendorCookie = (id) => {
   try {
@@ -119,7 +114,6 @@ const setVendorCookie = (id) => {
 };
 const announceSession = () => window.dispatchEvent(new Event("panel-session-changed"));
 
->>>>>>> b77933a (scss used in this)
 export const saveSession = (user, token = "local-admin-token") => {
   localStorage.setItem(TOKEN_KEY, token);
   localStorage.setItem(
@@ -133,21 +127,15 @@ export const saveSession = (user, token = "local-admin-token") => {
       allowedPaths: user.allowedPaths,
     })
   );
-<<<<<<< HEAD
-=======
   setVendorCookie(user.role === "Vendor" ? user.vendorId : "");
   announceSession();
->>>>>>> b77933a (scss used in this)
 };
 
 export const clearSession = () => {
   localStorage.removeItem(TOKEN_KEY);
   localStorage.removeItem(SESSION_KEY);
-<<<<<<< HEAD
-=======
   setVendorCookie("");
   announceSession();
->>>>>>> b77933a (scss used in this)
 };
 
 export const findLocalUser = ({ email, password }) =>
